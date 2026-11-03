@@ -4,6 +4,8 @@ Local, read-only MCP server for finding material in your authorized courses at h
 
 See the [versioned roadmap](docs/ROADMAP.md) for the v1.0 goal, planned releases, and contribution priorities. Roadmap features are proposals until shipped.
 
+Next planned: read supported linked Moodle content, then build evidence-backed weekly lab checks and a read-only calendar. Schedule answers must distinguish a confirmed session, confirmed no occurrence, and insufficient information. These capabilities are not implemented yet; see the roadmap's priority workflow.
+
 ## Setup
 
 Requires Node.js 24 or newer. From the repository directory:
