@@ -124,7 +124,7 @@ Linked entries refer to tracked work; unlinked entries are proposed issues. Spli
 | 1 | Login diagnostics (#4 / PR #5) — merged | v0.1.x | Five required CI checks, review findings resolved, live positive check |
 | 2 | [Academic-year and semester filters (#8)](https://github.com/mahmutmft/courses-mcp/issues/8) — merged | v0.2 | Supported naming variants, explicit selection, no date-based enrollment inference |
 | 3 | [Separate course sections (#12)](https://github.com/mahmutmft/courses-mcp/issues/12) — merged | v0.2 | Stable IDs, deduplication, bounded traversal, partial results |
-| 4 — next | Read supported Moodle pages and URL-resource HTML content | v0.2; resource IDs | Readable text/tables, source/retrieval time, safe redirects, explicit unsupported targets; no form submission |
+| 4 — active | [Read supported Moodle pages and URL-resource HTML content (#16)](https://github.com/mahmutmft/courses-mcp/issues/16) | v0.2; resource IDs | Readable text/tables, source/retrieval time, safe redirects, explicit unsupported targets; no form submission |
 | 5 | Browse folders and report inaccessible/unsupported activities | v0.2; resource model | Expected nested items found; no unrestricted cross-origin fetch; visible access failures |
 | 6 | Controlled resource retrieval and text-PDF extraction | v0.3; discovery | Access/MIME/size/time limits, page citations, unsupported scans explicit |
 | 7 | Extract lab timetables and select the student's course group | Scheduling track; supported content readers | Day/time/room, bounded recurrence, teaching period, source/freshness; private per-account group selection |

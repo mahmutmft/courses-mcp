@@ -2,6 +2,7 @@ import { chromium } from 'playwright';
 import { UserError, isCasLogin } from './config.js';
 import { normalizeCourses } from './content.js';
 import { collectCourseSections, readCoursePage } from './sections.js';
+import { readResourceContent } from './resources.js';
 import { LoginError, classifyLoginError, loginOutcome } from './login.js';
 
 const MOODLE = 'https://courses.finki.ukim.mk';
@@ -141,5 +142,10 @@ export class Moodle {
     if (!courses.some(course => course.id === id)) throw new UserError('Course is not in your enrolled course list.');
     return collectCourseSections({ courseId: id, baseUrl: MOODLE,
       readPage: (url, timeout) => readCoursePage(this.page.context().request, url, id, MOODLE, timeout) });
+  }
+
+  async readResource(courseId, resourceId) {
+    const course = await this.getCourse(courseId);
+    return readResourceContent({ request: this.page.context().request, course, resourceId });
   }
 }

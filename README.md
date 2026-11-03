@@ -4,7 +4,7 @@ Local, read-only MCP server for finding material in your authorized courses at h
 
 See the [versioned roadmap](docs/ROADMAP.md) for the v1.0 goal, planned releases, and contribution priorities. Roadmap features are proposals until shipped.
 
-Next planned: read supported linked Moodle content, then build evidence-backed weekly lab checks and a read-only calendar. Schedule answers must distinguish a confirmed session, confirmed no occurrence, and insufficient information. These capabilities are not implemented yet; see the roadmap's priority workflow.
+Supported linked Moodle HTML can be read on demand with read_resource. Next planned: evidence-backed weekly lab checks and a read-only calendar, distinguishing a confirmed session, confirmed no occurrence, and insufficient information. Scheduling/calendar capabilities are not implemented yet; see the roadmap's priority workflow.
 
 ## Setup
 
@@ -50,9 +50,26 @@ The server finds .env relative to its own project directory, regardless of the c
 | --- | --- | --- |
 | list_courses | optional academicYear (YYYY/YYYY), semester (winter/summer) | Enrolled courses, inferred term labels, source URLs, and unresolved-filter count |
 | get_course | courseId | Discovered sections, summaries, deduplicated resource links, and coverage warnings |
+| read_resource | courseId, resourceId (numeric module ID from its URL) | Supported Moodle HTML text/tables, source, checkedAt, and read/partial/unsupported status |
 | search_course | courseId, query, optional limit (1–100) | Matching section/activity text with source URLs |
 
 Example: ask your agent to list your courses, then search a selected course for “лабораториски” or “exam”. Search is case-insensitive and supports Macedonian text.
+
+### Reading a resource
+
+After `get_course`, use `read_resource` with the numeric module ID from the resource URL: `id=123` means `resourceId: 123`. Enrollment and discovery are checked on every read. The string resource `id` in discovery results is not this numeric parameter.
+
+Readers support Moodle `mod/page` HTML and `mod/url` wrapper descriptions, with safe indirection to another discovered supported module in the same course. Results include `sourceUrl`, a validated `resolvedUrl` when available, `checkedAt` (UTC retrieval time, not proof that a faculty timetable is current), text, table rows, safe discovered-module links, discovery `coverage`, warnings and status:
+
+- `read`: supported content returned within limits.
+- `partial`: text was returned but truncation or an unsupported destination prevents a complete read.
+- `unsupported`: the resource type, target or layout could not be read. Empty text is never proof that there are no labs or project registrations.
+
+External origins are not fetched. Destination paths/queries are not returned; only the external origin and a warning may be shown. PDFs, other files, folders, forums and poll/form content are not read. Forms/scripts/frames and page navigation are excluded; nothing is submitted. Unsupported targets need a separate reader/policy.
+
+Limits: five response hops, 15 seconds after discovery, 2 MiB processed HTML per response, 20,000 text characters, 10 tables with up to 100 rows/20 cells per row/500 characters per cell, and 50 unique discovered-module links. Truncation is explicit. The HTML size check follows Playwright's buffering and is not a streaming memory cap. Responses are disposed; no document content is saved. Each read also incurs the existing discovery budget.
+
+This is on-demand content reading. `search_course` still searches section/activity text only. Lab schedule interpretation and calendar tools remain planned. Restart the MCP connection to discover `read_resource` after updating.
 
 To select a semester, ask “List my winter 2026/2027 courses.” The agent can call:
 

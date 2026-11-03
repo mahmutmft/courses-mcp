@@ -25,6 +25,8 @@ function register(name, description, inputSchema, action) {
 register('list_courses', 'List enrolled Moodle courses, optionally filtered by explicit academic year and winter/summer semester. Filters use course-name labels; unresolved labels are reported in unclassifiedCount. Without filters returns all enrollments.', courseFilters,
   async args => filterCourseList(await moodle.listCourses(), args));
 register('get_course', 'Browse an enrolled course main page and discovered section pages. Returns deduplicated resources and coverage warnings for unavailable pages or limits. Does not expand folders or files.', { courseId }, args => moodle.getCourse(args.courseId));
+register('read_resource', 'Read text and tables from a discovered Moodle page or URL resource. resourceId is the numeric course-module id in its source URL. Returns provenance and explicit unsupported/partial status. Never reads external origins, PDFs, or forms; does not infer lab schedules.', { courseId, resourceId: courseId },
+  args => moodle.readResource(args.courseId, args.resourceId));
 register('search_course', 'Search visible section summaries and activity titles/descriptions in one enrolled course. Does not search PDF/file contents.', {
   courseId, query: z.string().trim().min(1).max(200), limit: z.number().int().min(1).max(100).default(30),
 }, async args => searchCourse(await moodle.getCourse(args.courseId), args.query, args.limit));

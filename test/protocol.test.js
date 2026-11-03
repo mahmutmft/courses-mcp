@@ -16,7 +16,7 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
   try {
     await client.connect(transport);
     const { tools } = await client.listTools();
-    assert.deepEqual(tools.map(tool => tool.name).sort(), ['get_course', 'list_courses', 'search_course']);
+    assert.deepEqual(tools.map(tool => tool.name).sort(), ['get_course', 'list_courses', 'read_resource', 'search_course']);
     assert.ok(tools.every(tool => tool.annotations.readOnlyHint));
     const listTool = tools.find(tool => tool.name === 'list_courses');
     assert.ok(listTool.inputSchema.properties.academicYear);
@@ -36,6 +36,9 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
     assert.match(missing.content[0].text, /Fill MOODLE_USERNAME/);
     const invalid = await client.callTool({ name: 'get_course', arguments: { courseId: -1 } });
     assert.equal(invalid.isError, true);
+    const invalidResource = await client.callTool({ name: 'read_resource', arguments: { courseId: 42, resourceId: -1 } });
+    assert.equal(invalidResource.isError, true);
+    assert.doesNotMatch(invalidResource.content[0].text, /Fill MOODLE_USERNAME/);
     assert.equal(stderr, '');
   } finally { await client.close(); }
 });

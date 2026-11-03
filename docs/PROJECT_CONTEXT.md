@@ -14,6 +14,7 @@ Node.js >=24, JavaScript ES modules, npm lockfile. The official MCP SDK v1 handl
 - src/moodle.js: serialized browser access, CAS login, enrolled-course AJAX calls, course-page browsing.
 - src/login.js: fixed login error codes, safe failure classification, and browser-side CAS/session outcome detection.
 - src/content.js: HTML parsing, URL restrictions, Unicode search.
+- src/resources.js: authorized discovered-module HTML reader, safe errors, bounded text/table extraction and provenance. External origins, forms, files and unsupported activities remain unread.
 - src/sections.js: same-course section discovery, redirect/ownership validation, bounded traversal, merging and safe partial-coverage warnings. Authenticated requests share the browser context's in-memory cookies.
 - src/courses.js: optional list_courses filter schema and academic-year/semester label inference. Filters apply after enrolled pagination; get_course authorization still uses the complete enrollment list.
 - src/index.js: stdio MCP tools; src/doctor.js: live aggregate-only login diagnostic.
@@ -64,3 +65,5 @@ Section traversal is bounded by logical pages, elapsed time, per-page timeout/re
 Course filters accept explicit academicYear (consecutive YYYY/YYYY) and semester (winter/summer). Metadata is inferred from supported name/short-name conventions, not today's date or an official semester API. Unknown/conflicting labels are reported; no-filter listing retains all enrollments. Document new naming conventions with fixtures before supporting them. See README for unclassifiedCount and truncation semantics.
 
 Use issue-linked branches and PRs. Default branch: master. Do not push directly to it. Repository settings and branch protection remain unverified.
+
+The read_resource tool is a separate on-demand reader for supported mod/page and mod/url resources. It reuses get_course authorization/discovery, validates each redirect against discovered module URLs, and returns read/partial/unsupported status, source and checkedAt. Unsupported external targets do not imply empty content. Search scope is unchanged. No schedule interpretation/calendar functionality is implemented by this reader. Tests use synthetic content; live diagnostics print only aggregate status/counts.
