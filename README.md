@@ -46,11 +46,23 @@ The server finds .env relative to its own project directory, regardless of the c
 
 | Tool | Input | Result |
 | --- | --- | --- |
-| list_courses | none | Enrolled course IDs, names, source URLs |
+| list_courses | optional academicYear (YYYY/YYYY), semester (winter/summer) | Enrolled courses, inferred term labels, source URLs, and unresolved-filter count |
 | get_course | courseId | Discovered sections, summaries, deduplicated resource links, and coverage warnings |
 | search_course | courseId, query, optional limit (1–100) | Matching section/activity text with source URLs |
 
 Example: ask your agent to list your courses, then search a selected course for “лабораториски” or “exam”. Search is case-insensitive and supports Macedonian text.
+
+To select a semester, ask “List my winter 2026/2027 courses.” The agent can call:
+
+~~~json
+{ "academicYear": "2026/2027", "semester": "winter" }
+~~~
+
+Both filters are optional and can be used separately. The year must contain consecutive four-digit years separated by `/`. Semester values are `winter` or `summer`; the adapter maps FINKI `Z`/`З`/`Зимски`/`winter` and `L`/`Л`/`Летен`/`summer` labels following an academic year. Naming conventions also support `2026/27`, `2026-2027`, and short `26/27` or `26-27` years (short starting years mean 2000–2099). Case and supported separators are normalized.
+
+Course results include `academicYear` and `semester`, or `null` when a label cannot be resolved. These are inferred from course names/short names, not official calendar metadata. Conflicting labels are not guessed. Without filters every enrolled course is returned, including courses with unknown labels. With filters, `unclassifiedCount` reports possible matches excluded because a requested label is unknown or conflicting; known non-matches are not counted. `truncated` still describes the upstream enrolled-course fetch. An empty filtered list is not proof that no enrollment exists if either indicator is nonzero/true. No current-semester inference is made from the date.
+
+Restart the MCP connection after updating so clients discover the new optional inputs. This is the first feature toward v0.2, not a release of the whole v0.2 roadmap.
 
 ## Limits and authentication
 
