@@ -2,6 +2,8 @@
 
 Local, read-only MCP server for finding material in your authorized courses at https://courses.finki.ukim.mk/.
 
+See the [versioned roadmap](docs/ROADMAP.md) for the v1.0 goal, planned releases, and contribution priorities. Roadmap features are proposals until shipped.
+
 ## Setup
 
 Requires Node.js 24 or newer. From the repository directory:
