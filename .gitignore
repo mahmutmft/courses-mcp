@@ -7,3 +7,8 @@
 .idea/
 .vscode/
 .DS_Store
+node_modules/
+coverage/
+playwright-report/
+test-results/
+.auth/
