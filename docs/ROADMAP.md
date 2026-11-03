@@ -80,7 +80,7 @@ This is a proposed backlog; these rows are not GitHub issues yet. Split each int
 | --- | --- | --- | --- |
 | 1 | Finish review and merge login diagnostics (#4 / PR #5) | v0.1.x | Five required CI checks, review findings resolved, live positive check |
 | 2 | Add explicit academic-year and semester course filters | v0.2 | Parse supported naming variants; allow explicit selection; never silently infer enrollment from date alone |
-| 3 | Normalize resources and traverse separate course sections | v0.2 | Stable IDs, no duplicates, bounded pagination/traversal, clear partial results |
+| 3 | [Normalize resources and traverse separate course sections (#12)](https://github.com/mahmutmft/courses-mcp/issues/12) | v0.2 | Stable IDs, no duplicates, bounded pagination/traversal, clear partial results |
 | 4 | Browse folders and report inaccessible/unsupported activities | v0.2; resource model | Expected nested items found; no cross-origin fetch; access failures remain visible |
 | 5 | Add controlled resource retrieval with size/type limits | v0.3; discovery | Enrollment/access recheck; validated redirects, MIME, limits, cancellation, cache policy |
 | 6 | Extract text PDFs with page references | v0.3; retrieval | Synthetic PDF fixtures; page-correct citations; explicit scanned/encrypted/unsupported cases |

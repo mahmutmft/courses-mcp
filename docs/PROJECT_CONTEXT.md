@@ -14,6 +14,7 @@ Node.js >=24, JavaScript ES modules, npm lockfile. The official MCP SDK v1 handl
 - src/moodle.js: serialized browser access, CAS login, enrolled-course AJAX calls, course-page browsing.
 - src/login.js: fixed login error codes, safe failure classification, and browser-side CAS/session outcome detection.
 - src/content.js: HTML parsing, URL restrictions, Unicode search.
+- src/sections.js: same-course section discovery, redirect/ownership validation, bounded traversal, merging and safe partial-coverage warnings. Authenticated requests share the browser context's in-memory cookies.
 - src/index.js: stdio MCP tools; src/doctor.js: live aggregate-only login diagnostic.
 - test/: offline parser/config tests and MCP stdio integration smoke test.
 - .github/: issue/PR templates, ownership, CI/security workflows.
@@ -55,6 +56,8 @@ Login diagnostics distinguish timeouts, navigation network/HTTP failures, explic
 
 ## Non-goals / constraints
 
-No submissions, posting, enrollment changes, administrative access, authentication bypass, or hosted credential storage. Search covers main-page section/activity text, not file contents, forum threads, or separate section pages. Unsupported layouts produce an error. Dashboard API availability and authenticated layouts require live verification.
+No submissions, posting, enrollment changes, administrative access, authentication bypass, or hosted credential storage. Search covers discovered supported section/activity text, not file contents, folder contents, activity detail pages or forum threads. Separate section routes are allowlisted and ownership-checked. Unsupported child layouts return partial coverage; an unreadable/unsupported root with no usable sections returns an error. Dashboard API availability and authenticated layouts require live verification.
+
+Section traversal is bounded by logical pages, elapsed time, per-page timeout/redirect hops, processed HTML size, and output section/resource counts; see README. Safe warnings are carried through search results. The HTML size check runs after Playwright's response buffering, not as a streaming memory cap. No arbitrary URL tool inputs or new persistence are introduced. Synthetic fixtures cover traversal, unsafe redirects, access/ownership failures and deduplication; live checks log only aggregate counts.
 
 Use issue-linked branches and PRs. Default branch: master. Do not push directly to it. Repository settings and branch protection remain unverified.
