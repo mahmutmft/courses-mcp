@@ -1,13 +1,15 @@
 import { chromium } from 'playwright';
 import { UserError, isCasLogin } from './config.js';
 import { normalizeCourses, parseCourse } from './content.js';
+import { LoginError, classifyLoginError, loginOutcome } from './login.js';
 
 const MOODLE = 'https://courses.finki.ukim.mk';
 const CAS = 'https://cas.finki.ukim.mk';
 
 export class Moodle {
-  constructor(config) {
+  constructor(config, { launchBrowser = () => chromium.launch({ headless: true }) } = {}) {
     this.config = config;
+    this.launchBrowser = launchBrowser;
     this.queue = Promise.resolve();
   }
 
@@ -19,50 +21,74 @@ export class Moodle {
   }
 
   async close() {
-    await this.browser?.close();
+    const browser = this.browser;
     this.browser = this.page = undefined;
+    await browser?.close();
   }
 
   async login() {
-    if (this.page && await this.isAuthenticated()) return;
     const { username, password } = this.config;
     if (!username || !password) throw new UserError('Fill MOODLE_USERNAME and MOODLE_PASSWORD in the local .env file first.');
-    await this.close();
-    this.browser = await chromium.launch({ headless: true });
-    const context = await this.browser.newContext();
-    // No third-party requests, traces, videos, screenshots, or persisted cookies.
-    await context.route('**/*', async route => {
-      const url = new URL(route.request().url());
-      if ([MOODLE, CAS].includes(url.origin)) await route.continue();
-      else await route.abort();
-    });
-    this.page = await context.newPage();
-    this.page.setDefaultTimeout(20000);
+    let stage = 'session';
+    let networkFailure = false;
+    let httpFailure = false;
+    let observedPage;
+    const mainNavigation = request => request.isNavigationRequest() && request.frame() === observedPage.mainFrame() &&
+      [MOODLE, CAS].includes(new URL(request.url()).origin);
+    const onFailed = request => { if (mainNavigation(request)) networkFailure = true; };
+    const onResponse = response => { if (mainNavigation(response.request()) && response.status() >= 400) httpFailure = true; };
     try {
+      if (this.page && await this.isAuthenticated()) return;
+      await this.close();
+      stage = 'browser';
+      this.browser = await this.launchBrowser();
+      const context = await this.browser.newContext();
+      // No third-party requests, traces, videos, screenshots, or persisted cookies.
+      await context.route('**/*', async route => {
+        const url = new URL(route.request().url());
+        if ([MOODLE, CAS].includes(url.origin)) await route.continue();
+        else await route.abort();
+      });
+      this.page = await context.newPage();
+      this.page.setDefaultTimeout(20000);
+      observedPage = this.page;
+      observedPage.on('requestfailed', onFailed);
+      observedPage.on('response', onResponse);
+      stage = 'navigation';
       await this.page.goto(`${MOODLE}/login/index.php`, { waitUntil: 'domcontentloaded' });
+      if (httpFailure) throw new LoginError('LOGIN_SERVICE');
       if (await this.isAuthenticated()) return;
+      const initialOutcome = await this.page.evaluate(loginOutcome, { submitted: false });
+      if (initialOutcome === 'authenticated') return;
+      if (initialOutcome) throw new LoginError(initialOutcome);
       if (!isCasLogin(this.page.url())) {
-        throw new UserError('The faculty login flow changed. Credentials were not submitted.');
+        throw new LoginError('LOGIN_FORM_CHANGED');
       }
       // Validate the form destination before entering credentials.
       const user = this.page.locator('input[name="username"]');
       const pass = this.page.locator('input[name="password"]');
+      if (await user.count() !== 1 || await pass.count() !== 1) throw new LoginError('LOGIN_FORM_CHANGED');
       const action = await user.evaluate(el => el.form?.action);
       if (!isCasLogin(action)) {
-        throw new UserError('Unrecognized faculty login form. Credentials were not submitted.');
+        throw new LoginError('LOGIN_FORM_CHANGED');
       }
       await user.fill(username);
       await pass.fill(password);
-      await Promise.all([
-        this.page.waitForURL(url => url.origin === MOODLE, { timeout: 30000 }),
-        pass.press('Enter'),
-      ]);
-      await this.page.waitForLoadState('domcontentloaded');
-      if (!await this.isAuthenticated()) throw new UserError('Login did not establish a Moodle session. Check credentials; additional sign-in steps may be required.');
+      stage = 'submit';
+      await pass.press('Enter');
+      const handle = await this.page.waitForFunction(loginOutcome, { submitted: true }, { timeout: 30000 });
+      const outcome = await handle.jsonValue();
+      await handle.dispose();
+      if (httpFailure) throw new LoginError('LOGIN_SERVICE');
+      if (outcome !== 'authenticated') throw new LoginError(outcome);
     } catch (error) {
-      await this.close();
-      if (error instanceof UserError) throw error;
-      throw new UserError('Faculty login could not finish. Check connectivity and credentials. CAPTCHA or MFA requires a separate supported login flow.');
+      const failure = classifyLoginError(error, { stage, networkFailure, httpFailure });
+      // Cleanup errors must never replace the useful failure or leak raw details.
+      await this.close().catch(() => {});
+      throw failure;
+    } finally {
+      observedPage?.off('requestfailed', onFailed);
+      observedPage?.off('response', onResponse);
     }
   }
 
