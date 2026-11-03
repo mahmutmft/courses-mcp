@@ -15,7 +15,7 @@ npm run browser:install
 Copy-Item .env.example .env
 ~~~
 
-Open .env locally and fill MOODLE_USERNAME and MOODLE_PASSWORD with your faculty login. Do not overwrite an existing .env. Git ignores it, but this OneDrive workspace may still sync it. Never paste credentials into chats, issues, or logs.
+Open .env locally and fill MOODLE_USERNAME and MOODLE_PASSWORD with your faculty login. Do not overwrite an existing .env. Git ignores it, but cloud-sync software can still synchronize ignored files. Never paste credentials into chats, issues, or logs.
 
 ~~~powershell
 npm run doctor
@@ -32,11 +32,13 @@ Use a stdio server configuration, replacing the absolute path for your machine:
   "mcpServers": {
     "finki-courses": {
       "command": "node",
-      "args": ["C:/Users/mahmu/OneDrive/Desktop/FINKI-MCP/courses-mcp/src/index.js"]
+      "args": ["C:/path/to/courses-mcp/src/index.js"]
     }
   }
 }
 ~~~
+
+The path above is a placeholder: replace `C:/path/to/courses-mcp` with your local clone's absolute directory. Do not publish your personal filesystem path in shared configuration examples.
 
 The server finds .env relative to its own project directory, regardless of the client's working directory. Environment variables supplied by the client take precedence. There is no HTTP listener. Authentication starts on the first tool call, with sessions kept in memory until shutdown.
 
