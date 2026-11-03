@@ -18,6 +18,19 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
     const { tools } = await client.listTools();
     assert.deepEqual(tools.map(tool => tool.name).sort(), ['get_course', 'list_courses', 'search_course']);
     assert.ok(tools.every(tool => tool.annotations.readOnlyHint));
+    const listTool = tools.find(tool => tool.name === 'list_courses');
+    assert.ok(listTool.inputSchema.properties.academicYear);
+    assert.ok(listTool.inputSchema.properties.semester);
+    for (const args of [
+      { academicYear: '2026/2028' }, { academicYear: '2026-2027' },
+      { academicYear: 'current' }, { academicYear: 2026 }, { semester: 'autumn' },
+    ]) {
+      const invalidFilter = await client.callTool({ name: 'list_courses', arguments: args });
+      assert.equal(invalidFilter.isError, true);
+      assert.doesNotMatch(invalidFilter.content[0].text, /Fill MOODLE_USERNAME/);
+    }
+    const validFilters = await client.callTool({ name: 'list_courses', arguments: { academicYear: '2026/2027', semester: 'winter' } });
+    assert.match(validFilters.content[0].text, /Fill MOODLE_USERNAME/);
     const missing = await client.callTool({ name: 'list_courses', arguments: {} });
     assert.equal(missing.isError, true);
     assert.match(missing.content[0].text, /Fill MOODLE_USERNAME/);

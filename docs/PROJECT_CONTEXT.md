@@ -14,6 +14,7 @@ Node.js >=24, JavaScript ES modules, npm lockfile. The official MCP SDK v1 handl
 - src/moodle.js: serialized browser access, CAS login, enrolled-course AJAX calls, course-page browsing.
 - src/login.js: fixed login error codes, safe failure classification, and browser-side CAS/session outcome detection.
 - src/content.js: HTML parsing, URL restrictions, Unicode search.
+- src/courses.js: optional list_courses filter schema and academic-year/semester label inference. Filters apply after enrolled pagination; get_course authorization still uses the complete enrollment list.
 - src/index.js: stdio MCP tools; src/doctor.js: live aggregate-only login diagnostic.
 - test/: offline parser/config tests and MCP stdio integration smoke test.
 - .github/: issue/PR templates, ownership, CI/security workflows.
@@ -56,5 +57,7 @@ Login diagnostics distinguish timeouts, navigation network/HTTP failures, explic
 ## Non-goals / constraints
 
 No submissions, posting, enrollment changes, administrative access, authentication bypass, or hosted credential storage. Search covers main-page section/activity text, not file contents, forum threads, or separate section pages. Unsupported layouts produce an error. Dashboard API availability and authenticated layouts require live verification.
+
+Course filters accept explicit academicYear (consecutive YYYY/YYYY) and semester (winter/summer). Metadata is inferred from supported name/short-name conventions, not today's date or an official semester API. Unknown/conflicting labels are reported; no-filter listing retains all enrollments. Document new naming conventions with fixtures before supporting them. See README for unclassifiedCount and truncation semantics.
 
 Use issue-linked branches and PRs. Default branch: master. Do not push directly to it. Repository settings and branch protection remain unverified.

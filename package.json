@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node src/index.js",
-    "check": "node --check src/index.js && node --check src/moodle.js && node --check src/config.js && node --check src/content.js && node --check src/login.js && node --check src/doctor.js",
+    "check": "node --check src/index.js && node --check src/moodle.js && node --check src/config.js && node --check src/content.js && node --check src/login.js && node --check src/doctor.js && node --check src/courses.js",
     "test": "node --test",
     "browser:install": "playwright install chromium",
     "doctor": "node src/doctor.js"

@@ -12,7 +12,7 @@ This is a living plan, not a delivery-date commitment. The version names below a
 
 The package currently declares version 0.1.0. The initial implementation was merged in [PR #3](https://github.com/mahmutmft/courses-mcp/pull/3): local stdio MCP, faculty CAS login, enrolled-course listing, main-page browsing, and search of visible section/activity text. Live personal-account checks succeeded, but do not establish support for every course layout. No release tags were present when this roadmap was created.
 
-[Issue #4](https://github.com/mahmutmft/courses-mcp/issues/4) and [PR #5](https://github.com/mahmutmft/courses-mcp/pull/5) implement safer login diagnostics separately; this roadmap does not imply that PR is merged or released.
+Safer login diagnostics from [issue #4](https://github.com/mahmutmft/courses-mcp/issues/4) and [PR #5](https://github.com/mahmutmft/courses-mcp/pull/5) are also merged. Merged changes do not by themselves imply a tagged release.
 
 Current limitations: separate section pages and folder contents are not fully traversed; file contents are not searched; no local search index, deadline tools, synchronization, dashboard, or multi-user service exists.
 
@@ -74,12 +74,12 @@ Multi-user hosting is a separate design decision, not a switch that exposes a pe
 
 ## Next issue queue
 
-This is a proposed backlog; these rows are not GitHub issues yet. Split each into implementation-sized issues with acceptance criteria when its release becomes active.
+Linked entries refer to tracked work; unlinked entries are proposed issues. Split proposed work into implementation-sized issues with acceptance criteria when its release becomes active.
 
 | Order | Proposed issue | Target / dependency | Acceptance focus |
 | --- | --- | --- | --- |
-| 1 | Finish review and merge login diagnostics (#4 / PR #5) | v0.1.x | Five required CI checks, review findings resolved, live positive check |
-| 2 | Add explicit academic-year and semester course filters | v0.2 | Parse supported naming variants; allow explicit selection; never silently infer enrollment from date alone |
+| 1 | Login diagnostics (#4 / PR #5) — merged | v0.1.x | Five required CI checks, review findings resolved, live positive check |
+| 2 | [Add explicit academic-year and semester course filters (#8)](https://github.com/mahmutmft/courses-mcp/issues/8) | v0.2 | Parse supported naming variants; allow explicit selection; never silently infer enrollment from date alone |
 | 3 | Normalize resources and traverse separate course sections | v0.2 | Stable IDs, no duplicates, bounded pagination/traversal, clear partial results |
 | 4 | Browse folders and report inaccessible/unsupported activities | v0.2; resource model | Expected nested items found; no cross-origin fetch; access failures remain visible |
 | 5 | Add controlled resource retrieval with size/type limits | v0.3; discovery | Enrollment/access recheck; validated redirects, MIME, limits, cancellation, cache policy |
