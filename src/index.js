@@ -13,6 +13,8 @@ const server = new McpServer({ name: 'finki-courses', version: '0.1.0' }, {
 });
 const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true };
 const courseId = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
+register('get_choice_selection', 'Read your saved selection from a discovered Moodle choice activity. Returns raw saved label and conservative day/time/room/group fields; missing fields remain unknown. Does not vote, change answers, infer weekly attendance, or read participant lists.', { courseId, choiceId: courseId },
+  args => moodle.getChoiceSelection(args.courseId, args.choiceId));
 function register(name, description, inputSchema, action) {
   server.registerTool(name, { description, inputSchema, annotations }, args => moodle.run(async () => {
     try {

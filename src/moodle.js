@@ -3,6 +3,7 @@ import { UserError, isCasLogin } from './config.js';
 import { normalizeCourses } from './content.js';
 import { collectCourseSections, readCoursePage } from './sections.js';
 import { readResourceContent } from './resources.js';
+import { readChoiceSelection } from './choices.js';
 import { LoginError, classifyLoginError, loginOutcome } from './login.js';
 
 const MOODLE = 'https://courses.finki.ukim.mk';
@@ -147,5 +148,10 @@ export class Moodle {
   async readResource(courseId, resourceId) {
     const course = await this.getCourse(courseId);
     return readResourceContent({ request: this.page.context().request, course, resourceId });
+  }
+
+  async getChoiceSelection(courseId, choiceId) {
+    const course = await this.getCourse(courseId);
+    return readChoiceSelection({ request: this.page.context().request, course, choiceId });
   }
 }

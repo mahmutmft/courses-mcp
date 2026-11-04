@@ -15,6 +15,7 @@ Node.js >=24, JavaScript ES modules, npm lockfile. The official MCP SDK v1 handl
 - src/login.js: fixed login error codes, safe failure classification, and browser-side CAS/session outcome detection.
 - src/content.js: HTML parsing, URL restrictions, Unicode search.
 - src/resources.js: authorized discovered-module HTML reader, safe errors, bounded text/table extraction and provenance. External origins, forms, non-PDF files and unsupported activities remain unread.
+- src/choices.js: read-only authenticated saved-choice parser and conservative term-label extraction; no form submission, roster extraction, persistence or weekly attendance inference.
 - src/pdf-resource.js: allowlisted Moodle file retrieval and safe unsupported/error states.
 - src/pdf.js and src/pdf-worker.js: terminable PDF.js extraction with page/text limits; no OCR or schedule inference.
 - src/sections.js: same-course section discovery, redirect/ownership validation, bounded traversal, merging and safe partial-coverage warnings. Authenticated requests share the browser context's in-memory cookies.
@@ -67,6 +68,8 @@ Section traversal is bounded by logical pages, elapsed time, per-page timeout/re
 Course filters accept explicit academicYear (consecutive YYYY/YYYY) and semester (winter/summer). Metadata is inferred from supported name/short-name conventions, not today's date or an official semester API. Unknown/conflicting labels are reported; no-filter listing retains all enrollments. Document new naming conventions with fixtures before supporting them. See README for unclassifiedCount and truncation semantics.
 
 Use issue-linked branches and PRs. Default branch: master. Do not push directly to it. Repository settings and branch protection remain unverified.
+
+get_choice_selection requires an enrolled course and a discovered choice module. It reads explicit saved-label messages, never default radio inputs, and distinguishes selected/not_selected/unknown. Personal selections are not stored or logged. Term fields are best-effort labels with explicit unresolved fields; missing choice data is not evidence of no labs. Fixtures are synthetic; live verification logs only status/field presence. See README for naming/layout support and bounds.
 
 The read_resource tool is a separate on-demand reader for supported mod/page and mod/url resources. It reuses get_course authorization/discovery, validates each redirect against discovered module URLs, and returns read/partial/unsupported status, source and checkedAt. Unsupported external targets do not imply empty content. Search scope is unchanged. No schedule interpretation/calendar functionality is implemented by this reader. Tests use synthetic content; live diagnostics print only aggregate status/counts.
 

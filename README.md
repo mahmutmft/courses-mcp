@@ -51,11 +51,24 @@ The server finds .env relative to its own project directory, regardless of the c
 | list_courses | optional academicYear (YYYY/YYYY), semester (winter/summer) | Enrolled courses, inferred term labels, source URLs, and unresolved-filter count |
 | get_course | courseId | Discovered sections, summaries, deduplicated resource links, and coverage warnings |
 | read_resource | courseId, resourceId (numeric module ID from its URL) | Supported Moodle HTML or page-numbered PDF text, source, checkedAt, and read/partial/unsupported status |
+| get_choice_selection | courseId, choiceId (numeric module ID) | Your saved poll label, conservative term fields, source and retrieval time; no voting |
 | search_course | courseId, query, optional limit (1–100) | Matching section/activity text with source URLs |
 
 Example: ask your agent to list your courses, then search a selected course for “лабораториски” or “exam”. Search is case-insensitive and supports Macedonian text.
 
-### Reading a resource
+### Reading your saved poll selection
+
+Find a `mod/choice/view.php?id=...` resource with `get_course`, then call `get_choice_selection` with that numeric module ID and its course ID. The tool rechecks course enrollment/discovery and makes one canonical GET. It never follows redirects or submits forms, and does not read participant/result tables. Current live support includes the faculty's server-rendered `generalbox` with the explicit `Your selection:` label, plus documented Macedonian label equivalents.
+
+Status is `selected` only when exactly one non-conflicting saved label is recognized; `not_selected` requires a supported explicit no-choice message; absent/changed/conflicting markup is `unknown`. A checked radio control alone is not treated as a saved choice. None of these states says whether a lab occurs this week.
+
+The result includes `selection`, `term` (`weekday`, `startTime`, `endTime`, `room`, `group`), `unresolvedFields`, warnings, `sourceUrl`, `checkedAt` and discovery coverage. Term parsing supports Macedonian/English day names and bilingual equivalents, colon-separated 24-hour or AM/PM times, numeric lab identifiers with supported suffixes, explicit group labels, and the faculty's A/B-before-lab layout. Times normalize to HH:MM; Macedonian A/B group and common room suffix equivalents normalize to Latin. Missing/conflicting/invalid fields remain null; overnight/ambiguous ranges are not guessed. Weekday values are English identifiers; this does not restrict the language of your question.
+
+Saved terms are personal account data. The tool returns them only through the requesting MCP session, does not log/save them, and the tests/docs use synthetic examples. Exemptions such as recognized labs are not inferred from a poll; private preference storage, weekly recurrence/date resolution and calendar tools remain separate future work.
+
+Limits are 15 seconds per request, 2 MiB processed HTML and a 700-character selection label. Size checks follow Playwright buffering, not a streaming memory cap. Unsupported/access/ownership/network errors are safe fixed codes; all responses are disposed. Restart MCP after updating to discover the tool.
+
+### Reading page and file content
 
 After `get_course`, use `read_resource` with the numeric module ID from the resource URL: `id=123` means `resourceId: 123`. Enrollment and discovery are checked on every read. The string resource `id` in discovery results is not this numeric parameter.
 
