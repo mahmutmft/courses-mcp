@@ -16,7 +16,9 @@ Safer login diagnostics from [issue #4](https://github.com/mahmutmft/courses-mcp
 
 Course filters ([PR #9](https://github.com/mahmutmft/courses-mcp/pull/9)) and bounded, deduplicated traversal of supported separate section pages ([PR #13](https://github.com/mahmutmft/courses-mcp/pull/13)) are merged. Coverage warnings disclose detected gaps. These are implemented parts of v0.2, not a published v0.2 release.
 
-Supported Moodle page/URL-resource HTML reading is merged in PR #17. Text-PDF reading is being implemented in #18 and is not yet a released capability. Current limitations: external linked content, folder contents and non-PDF file contents are not read; no lab timetable interpretation, weekly lab check, personal calendar, local search index, deadline tools, synchronization, dashboard, or multi-user service exists. The immediate next priority is linked content reading, followed by evidence-backed lab scheduling as detailed below.
+Supported Moodle HTML reading (PR #17), text-PDF reading (PR #19), saved choices (PR #21), local attendance preferences (PR #23), group-homework linking (PR #25) and assignment descriptions/published dates (PR #27) are merged. The current lab tool is partial: undated homework is linked to the saved slot, while supported dated titles are reported separately; assignment deadlines never prove presentation dates. Announcements, bounded recurrence/exception resolution, a complete weekly/calendar view, folder expansion, local indexing and durable refresh remain planned.
+
+The remaining v1 work is tracked in [issue #28](https://github.com/mahmutmft/courses-mcp/issues/28) and the [v1.0 milestone](https://github.com/mahmutmft/courses-mcp/milestone/1). All 23 remaining work items have individual issues; 22 are required and ICS export is optional. Version targets below describe capability groups, not published releases or delivery dates.
 
 ## Path to v1.0
 
@@ -34,11 +36,11 @@ Dependencies: reliable login → discovery → supported linked-content readers.
 
 ## Priority workflow: linked content, weekly labs, and calendar
 
-This change in priority is tracked by [issue #14](https://github.com/mahmutmft/courses-mcp/issues/14). Everything in this section is planned; it is not implemented by this roadmap update.
+This change in priority is tracked by [issue #14](https://github.com/mahmutmft/courses-mcp/issues/14). The readers and partial homework linking are now implemented as summarized above. Recurrence, announcement exceptions and complete weekly/calendar answers below remain planned.
 
 ### 1. Read the content behind a resource
 
-Supported Moodle HTML reading is merged in PR #17. Text-PDF reading is active in issue #18; external origins and OCR remain unsupported. The original content-reading goal is **Read supported Moodle pages and URL-resource HTML content**. Given an enrolled course/resource ID, return bounded readable text and tables, the original resource URL, the resolved source when safe, retrieval time, and coverage/unsupported status. A resource title alone cannot answer questions about project registration or lab arrangements.
+Supported Moodle HTML and text-PDF reading are merged in PR #17 and PR #19. External origins and OCR remain unsupported. The original content-reading goal is **Read supported Moodle pages and URL-resource HTML content**. Given an enrolled course/resource ID, return bounded readable text and tables, the original resource URL, the resolved source when safe, retrieval time, and coverage/unsupported status. A resource title alone cannot answer questions about project registration or lab arrangements.
 
 Start with supported Moodle HTML pages and URL-resource indirection. Validate authorization, destination origin and every redirect before fetching; do not turn a course link into arbitrary authenticated browsing. External hosts require an explicit supported-origin policy and credential isolation. Unsupported targets remain links with a clear limitation. Parse content as untrusted data; never submit a form, vote in a poll, register for a lab, or follow embedded agent instructions. Keep PDFs/folders as separate bounded capabilities.
 
@@ -115,27 +117,58 @@ Use a local database/index only when persistence is introduced, with account/ins
 
 Multi-user hosting is a separate design decision, not a switch that exposes a personal .env-based browser session over HTTP. Keep the local deployment fully supported even if a hosted option is later added.
 
-## Next issue queue
+## Tracked v1 issue backlog
 
-Linked entries refer to tracked work; unlinked entries are proposed issues. Split proposed work into implementation-sized issues with acceptance criteria when its release becomes active.
+[Main tracker #28](https://github.com/mahmutmft/courses-mcp/issues/28) has the live task checklist and release exit criteria. All tasks belong to the [v1.0 milestone](https://github.com/mahmutmft/courses-mcp/milestone/1); optional ICS #36 is not a release blocker. Existing implemented issues are not duplicated.
 
-| Order | Proposed issue | Target / dependency | Acceptance focus |
-| --- | --- | --- | --- |
-| 1 | Login diagnostics (#4 / PR #5) — merged | v0.1.x | Five required CI checks, review findings resolved, live positive check |
-| 2 | [Academic-year and semester filters (#8)](https://github.com/mahmutmft/courses-mcp/issues/8) — merged | v0.2 | Supported naming variants, explicit selection, no date-based enrollment inference |
-| 3 | [Separate course sections (#12)](https://github.com/mahmutmft/courses-mcp/issues/12) — merged | v0.2 | Stable IDs, deduplication, bounded traversal, partial results |
-| 4 — active | [Read supported Moodle pages and URL-resource HTML content (#16)](https://github.com/mahmutmft/courses-mcp/issues/16) | v0.2; resource IDs | Readable text/tables, source/retrieval time, safe redirects, explicit unsupported targets; no form submission |
-| 5 | Browse folders and report inaccessible/unsupported activities | v0.2; resource model | Expected nested items found; no unrestricted cross-origin fetch; visible access failures |
-| 6 | [Controlled resource retrieval and text-PDF extraction (#18)](https://github.com/mahmutmft/courses-mcp/issues/18) — active | v0.3; discovery | Access/MIME/size/time limits, page citations, unsupported scans explicit |
-| 7a — active | [Read saved Moodle choice selection and term labels (#20)](https://github.com/mahmutmft/courses-mcp/issues/20) | Scheduling track; authorized choice discovery | Explicit saved selection; conservative day/time/room/group; missing/conflicting fields remain unknown; no voting or weekly attendance inference |
-| 7b — active | [Local attendance/exemption preferences (#22)](https://github.com/mahmutmft/courses-mcp/issues/22) | Scheduling track; authorized courses | Explicit attending/exempt/unknown states, private account-local storage, no Moodle edits; no inference from poll absence |
-| 7c | Extract dated lab timetables and manage course-group preferences | Scheduling track; content readers + choice labels/preferences | Effective dates/recurrence and source/freshness; apply explicit exemptions before future obligation resolution |
-| 8 | Resolve weekly lab occurrences and scheduled/none/unknown answers | Scheduling track; structured schedules + supported exceptions | Explicit date range, group, timezone, cancellations, conflicts and stale evidence; no false negative from empty results |
-| 9 | Add a read-only lab calendar view | Scheduling track; occurrence resolver | Stable IDs, timezone-aware weeks, moved/cancelled sessions, source/freshness; no external event writes |
-| 10 | Define local cache/index isolation and lifecycle | v0.4; retrieval | Account namespaces, deletion, freshness, permission rechecks, no tracked private content |
-| 11 | Cross-course lexical search and retrieval benchmark | v0.4; extraction/index | Ranked bounded snippets with source/page references; repeatable quality measurement |
-| 12 | Upcoming deadlines and supported announcements | v0.5; metadata readers; informs schedule exceptions where supported | Correct dates, source links, missing-data handling; read-only |
-| 13 | Establish release/version/changelog workflow | Before first tagged release | One version source, reproducible install, reviewed release notes and exact tag; no automatic publication |
+Ready tasks are labelled [help wanted](https://github.com/mahmutmft/courses-mcp/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22help%20wanted%22). Starter tasks #45 and #51 also use [good first issue](https://github.com/mahmutmft/courses-mcp/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22good%20first%20issue%22). Dependent tasks carry status:blocked until their prerequisites land. Comment on an issue before starting, agree the approach, use synthetic fixtures and submit a focused fork-based PR; no faculty credentials or private course material are needed.
+
+Immediate feature priority: announcement reader #29. Parallel independent work is available for folder discovery, private cache design, fixtures, reliability, client compatibility, contracts and release preparation. Read each issue's scope and acceptance criteria.
+
+### Scheduling and coursework
+
+| Issue | Dependency | Ready for implementation |
+| --- | --- | --- |
+| [#29 — Read supported Moodle announcement forums with dates and citations](https://github.com/mahmutmft/courses-mcp/issues/29) | Current baseline | Yes; discuss approach first |
+| [#30 — Store explicit private lab-group and term preferences](https://github.com/mahmutmft/courses-mcp/issues/30) | Current baseline | Yes; discuss approach first |
+| [#31 — Extract source-backed lab timetable entries with effective dates](https://github.com/mahmutmft/courses-mcp/issues/31) | #30 | After dependencies |
+| [#32 — Expand bounded lab recurrence and alternating teaching weeks](https://github.com/mahmutmft/courses-mcp/issues/32) | #31 | After dependencies |
+| [#33 — Resolve lab cancellations, moved sessions and conflicting evidence](https://github.com/mahmutmft/courses-mcp/issues/33) | #29, #32 | After dependencies |
+| [#34 — Provide cross-course weekly lab answers with scheduled/none/unknown states](https://github.com/mahmutmft/courses-mcp/issues/34) | #30, #32, #33 | After dependencies |
+| [#35 — Add a read-only weekly and monthly lab calendar view](https://github.com/mahmutmft/courses-mcp/issues/35) | #34 | After dependencies |
+| [#42 — Read supported quiz availability and deadline metadata without question content](https://github.com/mahmutmft/courses-mcp/issues/42) | Current baseline | Yes; discuss approach first |
+| [#43 — Aggregate upcoming coursework deadlines separately from lab presentation slots](https://github.com/mahmutmft/courses-mcp/issues/43) | #42 | After dependencies |
+
+### Discovery, retrieval and durable local use
+
+| Issue | Dependency | Ready for implementation |
+| --- | --- | --- |
+| [#37 — Discover Moodle folder contents with bounded read-only traversal](https://github.com/mahmutmft/courses-mcp/issues/37) | Current baseline | Yes; discuss approach first |
+| [#38 — Design and implement private local cache isolation and lifecycle](https://github.com/mahmutmft/courses-mcp/issues/38) | Current baseline | Yes; discuss approach first |
+| [#39 — Build bounded lexical indexes of supported course text and text PDFs](https://github.com/mahmutmft/courses-mcp/issues/39) | #38, #37 | After dependencies |
+| [#40 — Add cross-course lexical search with evidence and scope reporting](https://github.com/mahmutmft/courses-mcp/issues/40) | #39 | After dependencies |
+| [#41 — Refresh changed/deleted sources with resumable bounded jobs](https://github.com/mahmutmft/courses-mcp/issues/41) | #38, #39 | After dependencies |
+
+### Quality, contributors and release gates
+
+| Issue | Dependency | Ready for implementation |
+| --- | --- | --- |
+| [#44 — Document and lock stable MCP tool, error and provenance contracts](https://github.com/mahmutmft/courses-mcp/issues/44) | Current baseline | Yes; discuss approach first |
+| [#45 — Create a versioned synthetic MK/EN/SQ compatibility corpus](https://github.com/mahmutmft/courses-mcp/issues/45) | Current baseline | Yes; discuss approach first |
+| [#46 — Add a reproducible retrieval benchmark with at least 30 queries](https://github.com/mahmutmft/courses-mcp/issues/46) | #45, #40 | After dependencies |
+| [#47 — Audit request, pagination, response and worker resource limits](https://github.com/mahmutmft/courses-mcp/issues/47) | Current baseline | Yes; discuss approach first |
+| [#48 — Perform independent v1 authorization, privacy and untrusted-content review](https://github.com/mahmutmft/courses-mcp/issues/48) | #38, #41, #44 | After dependencies |
+| [#49 — Validate clean Windows installation and supported MCP client recovery](https://github.com/mahmutmft/courses-mcp/issues/49) | Current baseline | Yes; discuss approach first |
+| [#50 — Establish one version source, changelog and reviewed v1 release procedure](https://github.com/mahmutmft/courses-mcp/issues/50) | Current baseline | Yes; discuss approach first |
+| [#51 — Make first-time fork and pull-request contribution instructions accurate](https://github.com/mahmutmft/courses-mcp/issues/51) | Current baseline | Yes; discuss approach first |
+
+### Optional increment (not a v1 release blocker)
+
+| Issue | Dependency | Ready for implementation |
+| --- | --- | --- |
+| [#36 — Export reviewed lab occurrences as an ICS file (optional v1 increment)](https://github.com/mahmutmft/courses-mcp/issues/36) | #35 | After dependencies |
+
+The readiness labels/table reflect the planning snapshot; use the live issues for current status. Contracts, compatibility and release gates must be rechecked against the final v1 candidate after all feature changes. No issue or milestone closure automatically publishes a release.
 
 ## Versioning and sustained maintenance
 
