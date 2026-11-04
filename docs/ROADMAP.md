@@ -151,3 +151,8 @@ At each milestone, review what users actually used, what failed, what now costs 
 ### Scheduling increment: homework-to-term linking (#24)
 
 The #24 implementation introduces get_lab_schedule for one explicitly selected course/week: retain group-specific homework with its saved presentation slot, and separately return supported dated title matches. This is not a complete weekly resolver: undated assignments remain date_unconfirmed, announcements/cancellations and activity details remain unread. Next scheduling work must establish assignment applicability/availability and dated exceptions before claiming confirmed weekly attendance or absence. Local attendance preferences are merged in PR #23; choice reading and PDF extraction are merged in PR #21 and PR #19 respectively (older active labels above describe the original queue).
+
+
+### Scheduling increment: assignment descriptions and published dates (#26)
+
+The #26 implementation adds get_assignment and bounded enrichment of matching group homework in get_lab_schedule. Opening/due/cutoff fields retain source labels and explicit timezone/parse uncertainty. A due date can distinguish deadline calendar relevance but never proves the presentation date or completion. Assignment-details reading follows merged homework linking (PR #25). Next: supported announcements and explicit applicability/presentation dates, then exception-aware weekly resolution and calendar/ICS. No release version has been tagged by this increment.

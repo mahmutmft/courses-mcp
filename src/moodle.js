@@ -6,6 +6,7 @@ import { readResourceContent } from './resources.js';
 import { readChoiceSelection } from './choices.js';
 import { LabPreferences } from './preferences.js';
 import { buildLabSchedule, isMonday } from './labs.js';
+import { readAssignment, enrichLabHomework } from './assignments.js';
 import { LoginError, classifyLoginError, loginOutcome } from './login.js';
 
 const MOODLE = 'https://courses.finki.ukim.mk';
@@ -153,6 +154,11 @@ export class Moodle {
     return readResourceContent({ request: this.page.context().request, course, resourceId });
   }
 
+  async getAssignment(courseId, assignmentId) {
+    const course = await this.getCourse(courseId);
+    return readAssignment({ request: this.page.context().request, course, assignmentId });
+  }
+
   async getChoiceSelection(courseId, choiceId) {
     const course = await this.getCourse(courseId);
     return readChoiceSelection({ request: this.page.context().request, course, choiceId });
@@ -169,7 +175,9 @@ export class Moodle {
     const preference = await this.labPreference(courseId);
     const course = preference.attendance === 'exempt' ? { id: courseId, sections: [], coverage: { skipped: 'user_declared_exemption' } }
       : await this.getCourse(courseId);
-    return buildLabSchedule({ course, preference, weekStart,
+    const schedule = await buildLabSchedule({ course, preference, weekStart,
       readChoice: choiceId => readChoiceSelection({ request: this.page.context().request, course, choiceId }) });
+    return enrichLabHomework(schedule, (assignmentId, timeout) =>
+      readAssignment({ request: this.page.context().request, course, assignmentId, timeout }));
   }
 }

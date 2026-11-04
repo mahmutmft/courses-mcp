@@ -30,7 +30,7 @@ export async function buildLabSchedule({ course, preference, weekStart, readChoi
   const result = { courseId: course.id, weekStart, weekEnd: end.toISOString().slice(0, 10), timezone: 'Europe/Skopje',
     checkedAt, status: 'unknown', attendance: preference.attendance, selectionSource: null,
     datedOccurrences: [], termLinkedHomework: [], warnings: [], coverage: course.coverage,
-    scope: 'Discovered activity titles plus saved choice only. Undated homework is linked to its presentation term, not confirmed in this week. Activity details, deadlines and announcements are not read; cancellations are unchecked. Empty results never prove no labs.' };
+    scope: 'Title matching plus saved choice. Undated homework is linked to its presentation term, not confirmed in this week. Supported assignment enrichment is reported separately; quiz details and announcements are not read; cancellations are unchecked. Empty results never prove no labs.' };
   if (preference.attendance === 'exempt') { result.status = 'exempt'; return result; }
   const resources = course.sections.flatMap(section => section.resources.map(resource => ({ ...resource, sectionName: section.name })));
   const choices = resources.filter(resource => type(resource) === 'choice' && labWords.test(resource.name));

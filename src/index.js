@@ -15,7 +15,9 @@ const server = new McpServer({ name: 'finki-courses', version: '0.1.0' }, {
 });
 const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true };
 const courseId = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
-register('get_lab_schedule', 'Connect discovered group-specific lab homework to your saved presentation term for an explicit Monday-start week in Europe/Skopje. Returns published dated matches and undated term-linked homework separately. Never omit matching homework merely because its title has no date; never claim it occurs this week without date evidence. Applies local exemptions. Announcements/cancellations and activity details are unchecked; empty means unknown, not no labs.',
+register('get_assignment', 'Read a discovered enrolled-course assignment description and published opening/due/cutoff fields with source and freshness. Unknown timezone or unsupported dates remain explicit. No submissions, grades, attachments or forms. Due dates are submission deadlines, not lab presentation times.',
+  { courseId, assignmentId: courseId }, args => moodle.getAssignment(args.courseId, args.assignmentId));
+register('get_lab_schedule', 'Connect discovered group-specific lab homework to your saved presentation term for an explicit Monday-start week in Europe/Skopje. Enrich matching assignment homework with bounded descriptions and published dates; deadlines never become presentation times or prove weekly attendance. Returns published dated matches and undated term-linked homework separately. Applies local exemptions. Announcements/cancellations remain unchecked; empty means unknown, not no labs.',
   { courseId, weekStart: z.string().refine(isMonday, 'Use a valid Monday in YYYY-MM-DD format.') },
   args => moodle.getLabSchedule(args.courseId, args.weekStart));
 register('get_choice_selection', 'Read your saved selection from a discovered Moodle choice activity. Returns raw saved label and conservative day/time/room/group fields; missing fields remain unknown. Does not vote, change answers, infer weekly attendance, or read participant lists.', { courseId, choiceId: courseId },
