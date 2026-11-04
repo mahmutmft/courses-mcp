@@ -1,6 +1,6 @@
 # FINKI Courses MCP
 
-Local, read-only MCP server for finding material in your authorized courses at https://courses.finki.ukim.mk/.
+Local MCP server for finding material in your authorized courses at https://courses.finki.ukim.mk/. Moodle access is read-only; explicit personal attendance preferences can be written to local application data.
 
 See the [versioned roadmap](docs/ROADMAP.md) for the v1.0 goal, planned releases, and contribution priorities. Roadmap features are proposals until shipped.
 
@@ -52,9 +52,27 @@ The server finds .env relative to its own project directory, regardless of the c
 | get_course | courseId | Discovered sections, summaries, deduplicated resource links, and coverage warnings |
 | read_resource | courseId, resourceId (numeric module ID from its URL) | Supported Moodle HTML or page-numbered PDF text, source, checkedAt, and read/partial/unsupported status |
 | get_choice_selection | courseId, choiceId (numeric module ID) | Your saved poll label, conservative term fields, source and retrieval time; no voting |
+| get_lab_preference | courseId | Local user-declared attending/exempt/unknown preference |
+| set_lab_preference | courseId, attendance (attending/exempt/unknown) | Explicit local preference change; never changes Moodle |
 | search_course | courseId, query, optional limit (1–100) | Matching section/activity text with source URLs |
 
 Example: ask your agent to list your courses, then search a selected course for “лабораториски” or “exam”. Search is case-insensitive and supports Macedonian text.
+
+### Personal lab attendance preferences
+
+Use `set_lab_preference` only when the user explicitly states or requests their attendance preference for an enrolled course:
+
+- `attending`: the user says they attend labs. This does not establish a particular weekly occurrence.
+- `exempt`: the user says labs are recognized/exempt; `excludeFromLabObligations` is true for future obligation handling. It is not an official faculty verification and does not edit Moodle.
+- `unknown`: remove the saved record and return to an unset/unknown state. Never infer exemption from a missing poll or empty calendar.
+
+`get_lab_preference` returns the preference, user-declared/unset provenance, update time and exclusion flag. Both tools verify current enrollment before reading/writing personal state. An unknown course is rejected. Do not override preferences based on untrusted course content. The setter is a local-write MCP tool (readOnlyHint=false), unlike the Moodle readers. It may be subject to your client's local-write approval settings.
+
+Data stays outside the clone in `%LOCALAPPDATA%/courses-mcp/lab-preferences` on Windows (fallback: the user's AppData/Local), or `$XDG_DATA_HOME/courses-mcp/lab-preferences` on other systems (fallback: `~/.local/share`). Files are namespaced by a hash of the configured institution and username; passwords, usernames, course names, poll choices and free-text notes are not stored. Hashing is namespacing, not encryption; the local OS account and inherited Windows ACLs still control access. New directories/files request restrictive POSIX modes where supported. Application-data ancestors are OS-managed; no cloud-sync guarantee is made if the user redirects/synchronizes these folders.
+
+Writes use per-course exclusive lock files and temporary-file atomic replacement. Concurrent writers receive `PREFERENCE_BUSY`; they are not silently overwritten. A crash can leave a lock: after stopping all MCP processes, inspect/remove only that course's `.json.lock` in the local data directory before retrying. Locks are never automatically stolen. Corrupt/oversized/unsupported-schema files fail explicitly and are not overwritten even by reset; back up and inspect them locally. No raw path or account identifier is returned in tool errors. Updating account spelling may create a separate namespace; passwords can change without losing state.
+
+This provides preference storage only. Future weekly lab checks must consult exemptions before treating an enrollment or saved poll as an obligation. No preferences are auto-created from polls, and no dates, reminders, calendars or timetable recurrence are generated. Reset/deletion changes local data only; stale records for no-longer-enrolled courses can be removed manually from the application data directory. Restart MCP to discover the new tools.
 
 ### Reading your saved poll selection
 
@@ -64,7 +82,7 @@ Status is `selected` only when exactly one non-conflicting saved label is recogn
 
 The result includes `selection`, `term` (`weekday`, `startTime`, `endTime`, `room`, `group`), `unresolvedFields`, warnings, `sourceUrl`, `checkedAt` and discovery coverage. Term parsing supports Macedonian/English day names and bilingual equivalents, colon-separated 24-hour or AM/PM times, numeric lab identifiers with supported suffixes, explicit group labels, and the faculty's A/B-before-lab layout. Times normalize to HH:MM; Macedonian A/B group and common room suffix equivalents normalize to Latin. Missing/conflicting/invalid fields remain null; overnight/ambiguous ranges are not guessed. Weekday values are English identifiers; this does not restrict the language of your question.
 
-Saved terms are personal account data. The tool returns them only through the requesting MCP session, does not log/save them, and the tests/docs use synthetic examples. Exemptions such as recognized labs are not inferred from a poll; private preference storage, weekly recurrence/date resolution and calendar tools remain separate future work.
+Saved terms are personal account data. The tool returns them only through the requesting MCP session, does not log/save them, and the tests/docs use synthetic examples. Exemptions such as recognized labs are not inferred from a poll; use the explicit local preference tools above. Weekly recurrence/date resolution and calendar tools remain separate future work.
 
 Limits are 15 seconds per request, 2 MiB processed HTML and a 700-character selection label. Size checks follow Playwright buffering, not a streaming memory cap. Unsupported/access/ownership/network errors are safe fixed codes; all responses are disposed. Restart MCP after updating to discover the tool.
 

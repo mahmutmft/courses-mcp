@@ -16,6 +16,7 @@ Node.js >=24, JavaScript ES modules, npm lockfile. The official MCP SDK v1 handl
 - src/content.js: HTML parsing, URL restrictions, Unicode search.
 - src/resources.js: authorized discovered-module HTML reader, safe errors, bounded text/table extraction and provenance. External origins, forms, non-PDF files and unsupported activities remain unread.
 - src/choices.js: read-only authenticated saved-choice parser and conservative term-label extraction; no form submission, roster extraction, persistence or weekly attendance inference.
+- src/preferences.js: private account/course-scoped local attendance preferences outside the clone; atomic per-course files, locks, schema checks and safe diagnostics. No Moodle state is changed.
 - src/pdf-resource.js: allowlisted Moodle file retrieval and safe unsupported/error states.
 - src/pdf.js and src/pdf-worker.js: terminable PDF.js extraction with page/text limits; no OCR or schedule inference.
 - src/sections.js: same-course section discovery, redirect/ownership validation, bounded traversal, merging and safe partial-coverage warnings. Authenticated requests share the browser context's in-memory cookies.
@@ -68,6 +69,8 @@ Section traversal is bounded by logical pages, elapsed time, per-page timeout/re
 Course filters accept explicit academicYear (consecutive YYYY/YYYY) and semester (winter/summer). Metadata is inferred from supported name/short-name conventions, not today's date or an official semester API. Unknown/conflicting labels are reported; no-filter listing retains all enrollments. Document new naming conventions with fixtures before supporting them. See README for unclassifiedCount and truncation semantics.
 
 Use issue-linked branches and PRs. Default branch: master. Do not push directly to it. Repository settings and branch protection remain unverified.
+
+Moodle operations remain read-only. set_lab_preference is an explicitly annotated local write with attending/exempt/unknown states; get_lab_preference is a local read. Both require current enrollment. State uses local application data outside the repo and an institution/username hash namespace, not encrypted storage. No credentials, course names or poll labels are persisted. Unknown resets remove a valid record; malformed records and competing writers fail safely. No weekly occurrence resolution is provided yet. See README for location, concurrency, crash-lock recovery and privacy limits.
 
 get_choice_selection requires an enrolled course and a discovered choice module. It reads explicit saved-label messages, never default radio inputs, and distinguishes selected/not_selected/unknown. Personal selections are not stored or logged. Term fields are best-effort labels with explicit unresolved fields; missing choice data is not evidence of no labs. Fixtures are synthetic; live verification logs only status/field presence. See README for naming/layout support and bounds.
 

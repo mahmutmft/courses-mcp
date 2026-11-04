@@ -16,8 +16,14 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
   try {
     await client.connect(transport);
     const { tools } = await client.listTools();
-    assert.deepEqual(tools.map(tool => tool.name).sort(), ['get_choice_selection', 'get_course', 'list_courses', 'read_resource', 'search_course']);
-    assert.ok(tools.every(tool => tool.annotations.readOnlyHint));
+    assert.deepEqual(tools.map(tool => tool.name).sort(), ['get_choice_selection', 'get_course', 'get_lab_preference', 'list_courses', 'read_resource', 'search_course', 'set_lab_preference']);
+    assert.ok(tools.filter(tool => tool.name !== 'set_lab_preference').every(tool => tool.annotations.readOnlyHint));
+    const setter = tools.find(tool => tool.name === 'set_lab_preference');
+    assert.equal(setter.annotations.readOnlyHint, false);
+    assert.equal(setter.annotations.openWorldHint, false);
+    const invalidPreference = await client.callTool({ name: 'set_lab_preference', arguments: { courseId: 42, attendance: 'auto' } });
+    assert.equal(invalidPreference.isError, true);
+    assert.doesNotMatch(invalidPreference.content[0].text, /Fill MOODLE_USERNAME/);
     const listTool = tools.find(tool => tool.name === 'list_courses');
     assert.ok(listTool.inputSchema.properties.academicYear);
     assert.ok(listTool.inputSchema.properties.semester);

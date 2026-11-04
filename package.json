@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node src/index.js",
-    "check": "node --check src/index.js && node --check src/moodle.js && node --check src/config.js && node --check src/content.js && node --check src/login.js && node --check src/doctor.js && node --check src/courses.js && node --check src/sections.js && node --check src/resources.js && node --check src/pdf.js && node --check src/pdf-worker.js && node --check src/pdf-resource.js && node --check src/choices.js",
+    "check": "node --check src/index.js && node --check src/moodle.js && node --check src/config.js && node --check src/content.js && node --check src/login.js && node --check src/doctor.js && node --check src/courses.js && node --check src/sections.js && node --check src/resources.js && node --check src/pdf.js && node --check src/pdf-worker.js && node --check src/pdf-resource.js && node --check src/choices.js && node --check src/preferences.js",
     "test": "node --test",
     "browser:install": "playwright install chromium",
     "doctor": "node src/doctor.js"

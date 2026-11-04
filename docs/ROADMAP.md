@@ -78,7 +78,7 @@ A student can connect a supported local MCP client, select courses/semester, dis
 
 The server supplies retrieval and metadata. The connected AI client writes explanations and study suggestions from that evidence. An additional model API key is not a requirement for the core retrieval workflow.
 
-v1 stays local and read-only. It excludes assignment submissions, forum posts, enrollment changes, grade changes, hosted credential storage, arbitrary web crawling, guaranteed OCR, and universal Moodle compatibility. Unsupported content must be identified rather than silently presented as fully indexed.
+v1 stays local, with read-only Moodle access and explicitly requested local personal preference writes. It excludes assignment submissions, forum posts, enrollment changes, grade changes, hosted credential storage, arbitrary web crawling, guaranteed OCR, and universal Moodle compatibility. Unsupported content must be identified rather than silently presented as fully indexed.
 
 ### Release gates
 
@@ -128,7 +128,8 @@ Linked entries refer to tracked work; unlinked entries are proposed issues. Spli
 | 5 | Browse folders and report inaccessible/unsupported activities | v0.2; resource model | Expected nested items found; no unrestricted cross-origin fetch; visible access failures |
 | 6 | [Controlled resource retrieval and text-PDF extraction (#18)](https://github.com/mahmutmft/courses-mcp/issues/18) — active | v0.3; discovery | Access/MIME/size/time limits, page citations, unsupported scans explicit |
 | 7a — active | [Read saved Moodle choice selection and term labels (#20)](https://github.com/mahmutmft/courses-mcp/issues/20) | Scheduling track; authorized choice discovery | Explicit saved selection; conservative day/time/room/group; missing/conflicting fields remain unknown; no voting or weekly attendance inference |
-| 7b | Extract dated lab timetables and manage personal attendance/exemption preferences | Scheduling track; content readers + choice labels | Effective dates/recurrence, source/freshness, account-local group preferences; recognized labs excluded by explicit user preference, not poll absence |
+| 7b — active | [Local attendance/exemption preferences (#22)](https://github.com/mahmutmft/courses-mcp/issues/22) | Scheduling track; authorized courses | Explicit attending/exempt/unknown states, private account-local storage, no Moodle edits; no inference from poll absence |
+| 7c | Extract dated lab timetables and manage course-group preferences | Scheduling track; content readers + choice labels/preferences | Effective dates/recurrence and source/freshness; apply explicit exemptions before future obligation resolution |
 | 8 | Resolve weekly lab occurrences and scheduled/none/unknown answers | Scheduling track; structured schedules + supported exceptions | Explicit date range, group, timezone, cancellations, conflicts and stale evidence; no false negative from empty results |
 | 9 | Add a read-only lab calendar view | Scheduling track; occurrence resolver | Stable IDs, timezone-aware weeks, moved/cancelled sessions, source/freshness; no external event writes |
 | 10 | Define local cache/index isolation and lifecycle | v0.4; retrieval | Account namespaces, deletion, freshness, permission rechecks, no tracked private content |

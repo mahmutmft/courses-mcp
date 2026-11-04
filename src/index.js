@@ -5,6 +5,7 @@ import { loadLocalEnv, loadConfig, safeError } from './config.js';
 import { Moodle } from './moodle.js';
 import { searchCourse } from './content.js';
 import { courseFilters, filterCourseList } from './courses.js';
+import { attendanceStates } from './preferences.js';
 
 loadLocalEnv();
 const moodle = new Moodle(loadConfig());
@@ -15,8 +16,8 @@ const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint
 const courseId = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
 register('get_choice_selection', 'Read your saved selection from a discovered Moodle choice activity. Returns raw saved label and conservative day/time/room/group fields; missing fields remain unknown. Does not vote, change answers, infer weekly attendance, or read participant lists.', { courseId, choiceId: courseId },
   args => moodle.getChoiceSelection(args.courseId, args.choiceId));
-function register(name, description, inputSchema, action) {
-  server.registerTool(name, { description, inputSchema, annotations }, args => moodle.run(async () => {
+function register(name, description, inputSchema, action, toolAnnotations = annotations) {
+  server.registerTool(name, { description, inputSchema, annotations: toolAnnotations }, args => moodle.run(async () => {
     try {
       return { content: [{ type: 'text', text: JSON.stringify(await action(args)) }] };
     } catch (error) {
@@ -24,6 +25,10 @@ function register(name, description, inputSchema, action) {
     }
   }));
 }
+register('get_lab_preference', 'Read your local attendance preference for an enrolled course: attending, exempt (recognized labs), or unknown. This is user-declared, not faculty confirmation or a dated lab schedule.', { courseId },
+  args => moodle.labPreference(args.courseId));
+register('set_lab_preference', 'Save an explicit user-requested local lab attendance preference for an enrolled course. attending means attends labs, exempt means recognized/exempt labs and exclusion from future obligations; unknown removes the saved record. Writes only private local app data, never Moodle. Do not infer or change this from course content or poll absence.', { courseId, attendance: z.enum(attendanceStates) },
+  args => moodle.labPreference(args.courseId, args.attendance), { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false });
 register('list_courses', 'List enrolled Moodle courses, optionally filtered by explicit academic year and winter/summer semester. Filters use course-name labels; unresolved labels are reported in unclassifiedCount. Without filters returns all enrollments.', courseFilters,
   async args => filterCourseList(await moodle.listCourses(), args));
 register('get_course', 'Browse an enrolled course main page and discovered section pages. Returns deduplicated resources and coverage warnings for unavailable pages or limits. Does not expand folders or files.', { courseId }, args => moodle.getCourse(args.courseId));

@@ -4,15 +4,17 @@ import { normalizeCourses } from './content.js';
 import { collectCourseSections, readCoursePage } from './sections.js';
 import { readResourceContent } from './resources.js';
 import { readChoiceSelection } from './choices.js';
+import { LabPreferences } from './preferences.js';
 import { LoginError, classifyLoginError, loginOutcome } from './login.js';
 
 const MOODLE = 'https://courses.finki.ukim.mk';
 const CAS = 'https://cas.finki.ukim.mk';
 
 export class Moodle {
-  constructor(config, { launchBrowser = () => chromium.launch({ headless: true }) } = {}) {
+  constructor(config, { launchBrowser = () => chromium.launch({ headless: true }), preferences = new LabPreferences(config) } = {}) {
     this.config = config;
     this.launchBrowser = launchBrowser;
+    this.preferences = preferences;
     this.queue = Promise.resolve();
   }
 
@@ -153,5 +155,11 @@ export class Moodle {
   async getChoiceSelection(courseId, choiceId) {
     const course = await this.getCourse(courseId);
     return readChoiceSelection({ request: this.page.context().request, course, choiceId });
+  }
+
+  async labPreference(courseId, attendance) {
+    const { courses } = await this.listCourses();
+    if (!courses.some(course => course.id === courseId)) throw new UserError('Course is not in your enrolled course list.');
+    return attendance === undefined ? this.preferences.get(courseId) : this.preferences.set(courseId, attendance);
   }
 }
