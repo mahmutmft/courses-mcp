@@ -52,6 +52,7 @@ The server finds .env relative to its own project directory, regardless of the c
 | get_course | courseId | Discovered sections, summaries, deduplicated resource links, and coverage warnings |
 | read_resource | courseId, resourceId (numeric module ID from its URL) | Supported Moodle HTML or page-numbered PDF text, source, checkedAt, and read/partial/unsupported status |
 | get_choice_selection | courseId, choiceId (numeric module ID) | Your saved poll label, conservative term fields, source and retrieval time; no voting |
+| get_lab_schedule | courseId, weekStart (Monday YYYY-MM-DD) | Published dated lab matches and group homework linked to your saved presentation term; explicit uncertainty |
 | get_lab_preference | courseId | Local user-declared attending/exempt/unknown preference |
 | set_lab_preference | courseId, attendance (attending/exempt/unknown) | Explicit local preference change; never changes Moodle |
 | search_course | courseId, query, optional limit (1–100) | Matching section/activity text with source URLs |
@@ -176,3 +177,13 @@ Tests include HTML parsing, source URL restrictions, Unicode search, configurati
 Dependencies: the official MCP SDK implements protocol/stdio; Zod validates tool inputs; Playwright handles CAS and authenticated Moodle browser access; Cheerio parses course HTML; Mozilla PDF.js (pdfjs-dist) extracts PDF text without requiring a Python runtime. Node's built-in environment loader and test runner avoid extra dependencies.
 
 Follow AGENTS.md and CONTRIBUTING.md: issue → issue-linked branch → PR → CI and review → merge. Default branch: master. See docs/PROJECT_CONTEXT.md and docs/SETUP_CHECKLIST.md.
+
+## Lab homework and saved presentation terms
+
+`get_lab_schedule(courseId, weekStart)` connects a discovered lab-term choice with matching group-specific homework. Use an explicit Monday such as `2026-10-05`; the returned week is Monday–Sunday in Europe/Skopje. The tool reads current enrollment, local attendance preference, course sections and at most one unambiguous lab choice. Exempt courses skip content discovery. It never writes preferences or Moodle state.
+
+`termLinkedHomework` retains matching group homework with the saved weekday/time/room even when the title has no date. For example, “Lab homework 1 — Group B” is connected to the selected group-B presentation slot rather than omitted. These items have `date: null` and `date_unconfirmed`: they are relevant homework candidates, **not proof of an occurrence in the requested week**. Older homework can remain visible; assignment availability, deadlines and applicability are not yet read. The selected term is the presentation slot, not the submission deadline. Group markers in Macedonian, English and Albanian activity titles are recognized; saved-choice parsing retains its documented supported languages/layouts.
+
+`datedOccurrences` requires a single valid DD.MM.YYYY title date in the requested week, an explicit matching group, and a supported parenthesized room/time slot matching the saved choice. Paired assignment/test titles retain both citations in one occurrence. Missing end times stay unknown. Missing group/choice, multiple choices and unsupported layouts remain unresolved; nothing infers attendance from enrollment or another student's roster.
+
+The result remains `partial` when matches exist: activity details, forum announcements, cancellations, teaching periods and recurrence are not checked. `unknown` with empty results never means “no labs”; `exempt` reflects only the user's local declaration. Sources, retrieval time and course coverage are returned. No automatic recurrence, background monitoring, calendar writes, file downloads or new dependencies are introduced. Restart the MCP connection after installing the update.

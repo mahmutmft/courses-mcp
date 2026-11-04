@@ -5,6 +5,7 @@ import { collectCourseSections, readCoursePage } from './sections.js';
 import { readResourceContent } from './resources.js';
 import { readChoiceSelection } from './choices.js';
 import { LabPreferences } from './preferences.js';
+import { buildLabSchedule, isMonday } from './labs.js';
 import { LoginError, classifyLoginError, loginOutcome } from './login.js';
 
 const MOODLE = 'https://courses.finki.ukim.mk';
@@ -161,5 +162,14 @@ export class Moodle {
     const { courses } = await this.listCourses();
     if (!courses.some(course => course.id === courseId)) throw new UserError('Course is not in your enrolled course list.');
     return attendance === undefined ? this.preferences.get(courseId) : this.preferences.set(courseId, attendance);
+  }
+
+  async getLabSchedule(courseId, weekStart) {
+    if (!isMonday(weekStart)) throw new UserError('weekStart must be a valid Monday in YYYY-MM-DD format.');
+    const preference = await this.labPreference(courseId);
+    const course = preference.attendance === 'exempt' ? { id: courseId, sections: [], coverage: { skipped: 'user_declared_exemption' } }
+      : await this.getCourse(courseId);
+    return buildLabSchedule({ course, preference, weekStart,
+      readChoice: choiceId => readChoiceSelection({ request: this.page.context().request, course, choiceId }) });
   }
 }

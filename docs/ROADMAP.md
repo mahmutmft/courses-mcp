@@ -146,3 +146,8 @@ Work through issue → branch → focused PR → required checks → independent
 For every feature release, reserve capacity for regression fixes, dependency updates, security, documentation, and compatibility fixtures. Track setup success, login failure categories, discovery completeness, retrieval quality, freshness, and latency through synthetic/local measurements; do not collect private-content telemetry by default. Record baselines before claiming improvement.
 
 At each milestone, review what users actually used, what failed, what now costs too much to maintain, and what should be removed or redesigned. An enduring project needs a bounded reliable core and a growing tested ecosystem, not an ever-growing unfinished v1.
+
+
+### Scheduling increment: homework-to-term linking (#24)
+
+The #24 implementation introduces get_lab_schedule for one explicitly selected course/week: retain group-specific homework with its saved presentation slot, and separately return supported dated title matches. This is not a complete weekly resolver: undated assignments remain date_unconfirmed, announcements/cancellations and activity details remain unread. Next scheduling work must establish assignment applicability/availability and dated exceptions before claiming confirmed weekly attendance or absence. Local attendance preferences are merged in PR #23; choice reading and PDF extraction are merged in PR #21 and PR #19 respectively (older active labels above describe the original queue).

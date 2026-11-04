@@ -16,7 +16,12 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
   try {
     await client.connect(transport);
     const { tools } = await client.listTools();
-    assert.deepEqual(tools.map(tool => tool.name).sort(), ['get_choice_selection', 'get_course', 'get_lab_preference', 'list_courses', 'read_resource', 'search_course', 'set_lab_preference']);
+    assert.deepEqual(tools.map(tool => tool.name).sort(), ['get_choice_selection', 'get_course', 'get_lab_preference', 'get_lab_schedule', 'list_courses', 'read_resource', 'search_course', 'set_lab_preference']);
+    for (const weekStart of ['2026-02-30', '2026-11-03', 'current']) {
+      const invalidWeek = await client.callTool({ name: 'get_lab_schedule', arguments: { courseId: 42, weekStart } });
+      assert.equal(invalidWeek.isError, true);
+      assert.doesNotMatch(invalidWeek.content[0].text, /Fill MOODLE_USERNAME/);
+    }
     assert.ok(tools.filter(tool => tool.name !== 'set_lab_preference').every(tool => tool.annotations.readOnlyHint));
     const setter = tools.find(tool => tool.name === 'set_lab_preference');
     assert.equal(setter.annotations.readOnlyHint, false);
