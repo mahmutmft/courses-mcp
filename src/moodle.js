@@ -7,6 +7,7 @@ import { readChoiceSelection } from './choices.js';
 import { LabPreferences } from './preferences.js';
 import { buildLabSchedule, isMonday } from './labs.js';
 import { readAssignment, enrichLabHomework } from './assignments.js';
+import { readAnnouncements } from './forums.js';
 import { LoginError, classifyLoginError, loginOutcome } from './login.js';
 
 const MOODLE = 'https://courses.finki.ukim.mk';
@@ -157,6 +158,11 @@ export class Moodle {
   async getAssignment(courseId, assignmentId) {
     const course = await this.getCourse(courseId);
     return readAssignment({ request: this.page.context().request, course, assignmentId });
+  }
+
+  async getAnnouncements(courseId, forumId) {
+    const course = await this.getCourse(courseId);
+    return readAnnouncements({ request: this.page.context().request, course, forumId });
   }
 
   async getChoiceSelection(courseId, choiceId) {

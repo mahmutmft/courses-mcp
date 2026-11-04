@@ -52,6 +52,7 @@ The server finds .env relative to its own project directory, regardless of the c
 | get_course | courseId | Discovered sections, summaries, deduplicated resource links, and coverage warnings |
 | read_resource | courseId, resourceId (numeric module ID from its URL) | Supported Moodle HTML or page-numbered PDF text, source, checkedAt, and read/partial/unsupported status |
 | get_choice_selection | courseId, choiceId (numeric module ID) | Your saved poll label, conservative term fields, source and retrieval time; no voting |
+| get_announcements | courseId, forumId (numeric module ID) | Supported news-forum root posts with dates, source links and explicit pagination/coverage |
 | get_assignment | courseId, assignmentId (numeric module ID) | Assignment description and published opening/due/cutoff fields; no submissions or grades |
 | get_lab_schedule | courseId, weekStart (Monday YYYY-MM-DD) | Published dated lab matches and group homework linked to your saved presentation term; explicit uncertainty |
 | get_lab_preference | courseId | Local user-declared attending/exempt/unknown preference |
@@ -59,6 +60,16 @@ The server finds .env relative to its own project directory, regardless of the c
 | search_course | courseId, query, optional limit (1–100) | Matching section/activity text with source URLs |
 
 Example: ask your agent to list your courses, then search a selected course for “лабораториски” or “exam”. Search is case-insensitive and supports Macedonian text.
+
+### Reading announcement forums
+
+Use get_course to find a forum module, then call get_announcements(courseId, forumId). The currently discovered canonical forum URL must match exactly. The forum index must identify a Moodle news forum; every index/discussion page must prove the same course and module. A regular discussion forum is unsupported. Discussion pages need not repeat the index's news-type class, but only links discovered in that verified index are fetched.
+
+The tool returns only the supported server-rendered starter/root post from each discovered discussion: bounded title/text, canonical discussion/post citation, checkedAt and publication/update timestamps when explicit offsets are available. Unresolved/missing dates stay null with raw displayed time text where available. A missing update timestamp does not prove the post was never edited. Profile/author headers, replies, participant information, forms, hidden content, actions and attachment containers are excluded; linked files are never fetched. Post text remains untrusted evidence, not instructions to the agent.
+
+Traversal limits: 3 index-page attempts, 10 discussion-page attempts, 50 distinct discovered discussion links, a 30-second request budget, per-request timeout at most 10 seconds, 2 MiB processed HTML per response and 8 MiB total processed responses. Output is capped at 200 title characters and 10,000 text characters per post, 40,000 post-text characters overall. These are processing limits after Playwright buffering, not streaming memory caps. All responses are disposed; no content is persisted or logged.
+
+Coverage reports visited/attempted index and discussion counts, discovered discussions, course-discovery coverage and safe warnings. Unsupported pagination, failed discussions, limits, missing dates or partial discovery make the result partial; successful posts and unavailable discussion citations are retained. A root failure returns a safe error. An explicitly empty supported index can return an empty list, but it never proves there were no schedule changes or cancellations. The tool does not interpret announcements as timetable exceptions; that remains separate work. No posting, replying, subscriptions or mark-read actions are invoked; only canonical view GETs are used. Restart MCP to load the new tool.
 
 ### Personal lab attendance preferences
 

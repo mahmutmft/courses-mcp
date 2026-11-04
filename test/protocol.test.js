@@ -16,7 +16,7 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
   try {
     await client.connect(transport);
     const { tools } = await client.listTools();
-    assert.deepEqual(tools.map(tool => tool.name).sort(), ['get_assignment', 'get_choice_selection', 'get_course', 'get_lab_preference', 'get_lab_schedule', 'list_courses', 'read_resource', 'search_course', 'set_lab_preference']);
+    assert.deepEqual(tools.map(tool => tool.name).sort(), ['get_announcements', 'get_assignment', 'get_choice_selection', 'get_course', 'get_lab_preference', 'get_lab_schedule', 'list_courses', 'read_resource', 'search_course', 'set_lab_preference']);
     for (const weekStart of ['2026-02-30', '2026-11-03', 'current']) {
       const invalidWeek = await client.callTool({ name: 'get_lab_schedule', arguments: { courseId: 42, weekStart } });
       assert.equal(invalidWeek.isError, true);
@@ -49,6 +49,9 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
     assert.equal(invalid.isError, true);
     const invalidResource = await client.callTool({ name: 'read_resource', arguments: { courseId: 42, resourceId: -1 } });
     assert.equal(invalidResource.isError, true);
+    const badForum = await client.callTool({ name: 'get_announcements', arguments: { courseId: 42, forumId: -1 } });
+    assert.equal(badForum.isError, true);
+    assert.doesNotMatch(badForum.content[0].text, /Fill MOODLE_USERNAME/);
     const badAssignment = await client.callTool({ name: 'get_assignment', arguments: { courseId: 42, assignmentId: -1 } });
     assert.equal(badAssignment.isError, true);
     assert.doesNotMatch(badAssignment.content[0].text, /Fill MOODLE_USERNAME/);
