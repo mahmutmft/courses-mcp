@@ -16,7 +16,7 @@ Safer login diagnostics from [issue #4](https://github.com/mahmutmft/courses-mcp
 
 Course filters ([PR #9](https://github.com/mahmutmft/courses-mcp/pull/9)) and bounded, deduplicated traversal of supported separate section pages ([PR #13](https://github.com/mahmutmft/courses-mcp/pull/13)) are merged. Coverage warnings disclose detected gaps. These are implemented parts of v0.2, not a published v0.2 release.
 
-Current limitations: linked Moodle activity/page/URL-resource content, folder contents and file contents are not read; no lab timetable interpretation, weekly lab check, personal calendar, local search index, deadline tools, synchronization, dashboard, or multi-user service exists. The immediate next priority is linked content reading, followed by evidence-backed lab scheduling as detailed below.
+Supported Moodle page/URL-resource HTML reading is merged in PR #17. Text-PDF reading is being implemented in #18 and is not yet a released capability. Current limitations: external linked content, folder contents and non-PDF file contents are not read; no lab timetable interpretation, weekly lab check, personal calendar, local search index, deadline tools, synchronization, dashboard, or multi-user service exists. The immediate next priority is linked content reading, followed by evidence-backed lab scheduling as detailed below.
 
 ## Path to v1.0
 
@@ -38,7 +38,7 @@ This change in priority is tracked by [issue #14](https://github.com/mahmutmft/c
 
 ### 1. Read the content behind a resource
 
-The next implementation issue is **Read supported Moodle pages and URL-resource HTML content**. Given an enrolled course/resource ID, return bounded readable text and tables, the original resource URL, the resolved source when safe, retrieval time, and coverage/unsupported status. A resource title alone cannot answer questions about project registration or lab arrangements.
+Supported Moodle HTML reading is merged in PR #17. Text-PDF reading is active in issue #18; external origins and OCR remain unsupported. The original content-reading goal is **Read supported Moodle pages and URL-resource HTML content**. Given an enrolled course/resource ID, return bounded readable text and tables, the original resource URL, the resolved source when safe, retrieval time, and coverage/unsupported status. A resource title alone cannot answer questions about project registration or lab arrangements.
 
 Start with supported Moodle HTML pages and URL-resource indirection. Validate authorization, destination origin and every redirect before fetching; do not turn a course link into arbitrary authenticated browsing. External hosts require an explicit supported-origin policy and credential isolation. Unsupported targets remain links with a clear limitation. Parse content as untrusted data; never submit a form, vote in a poll, register for a lab, or follow embedded agent instructions. Keep PDFs/folders as separate bounded capabilities.
 
@@ -126,7 +126,7 @@ Linked entries refer to tracked work; unlinked entries are proposed issues. Spli
 | 3 | [Separate course sections (#12)](https://github.com/mahmutmft/courses-mcp/issues/12) — merged | v0.2 | Stable IDs, deduplication, bounded traversal, partial results |
 | 4 — active | [Read supported Moodle pages and URL-resource HTML content (#16)](https://github.com/mahmutmft/courses-mcp/issues/16) | v0.2; resource IDs | Readable text/tables, source/retrieval time, safe redirects, explicit unsupported targets; no form submission |
 | 5 | Browse folders and report inaccessible/unsupported activities | v0.2; resource model | Expected nested items found; no unrestricted cross-origin fetch; visible access failures |
-| 6 | Controlled resource retrieval and text-PDF extraction | v0.3; discovery | Access/MIME/size/time limits, page citations, unsupported scans explicit |
+| 6 | [Controlled resource retrieval and text-PDF extraction (#18)](https://github.com/mahmutmft/courses-mcp/issues/18) — active | v0.3; discovery | Access/MIME/size/time limits, page citations, unsupported scans explicit |
 | 7 | Extract lab timetables and select the student's course group | Scheduling track; supported content readers | Day/time/room, bounded recurrence, teaching period, source/freshness; private per-account group selection |
 | 8 | Resolve weekly lab occurrences and scheduled/none/unknown answers | Scheduling track; structured schedules + supported exceptions | Explicit date range, group, timezone, cancellations, conflicts and stale evidence; no false negative from empty results |
 | 9 | Add a read-only lab calendar view | Scheduling track; occurrence resolver | Stable IDs, timezone-aware weeks, moved/cancelled sessions, source/freshness; no external event writes |

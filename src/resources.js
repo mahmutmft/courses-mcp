@@ -1,6 +1,7 @@
 import { load } from 'cheerio';
 import { errors } from 'playwright';
 import { UserError } from './config.js';
+import { readPdfResource } from './pdf-resource.js';
 
 const base = 'https://courses.finki.ukim.mk';
 const clean = value => value.replace(/\s+/g, ' ').trim();
@@ -79,6 +80,23 @@ export async function readResourceContent({ request, course, resourceId, now = (
   const result = { courseId: course.id, resourceId, name: allowed.get(source).name, sourceUrl: source,
     checkedAt: now(), status: 'unsupported', text: '', tables: [], links: [], truncated: false,
     coverage: course.coverage, warnings: [], scope: 'Supported Moodle HTML only; no external browsing, forms, PDFs, folders, or timetable inference.' };
+  if (new URL(source).pathname === '/mod/resource/view.php') {
+    const pdf = await readPdfResource({ request, source, courseId: course.id });
+    result.format = 'pdf';
+    result.scope = 'Text from supported Moodle PDFs only; no OCR, semantic table reconstruction, or lab schedule inference.';
+    result.pages = (pdf.pages || []).map(page => ({ ...page, sourceUrl: source }));
+    result.pageCount = pdf.pageCount ?? null;
+    result.truncated = pdf.truncated || false;
+    result.emptyPages = pdf.emptyPages || [];
+    result.failedPages = pdf.failedPages || [];
+    result.text = result.pages.map(page => `[Page ${page.pageNumber}]\n${page.text}`).join('\n\n');
+    if (pdf.errorCode) result.warnings.push(pdf.errorCode);
+    if (result.emptyPages.length) result.warnings.push('PDF_PAGES_WITHOUT_TEXT');
+    if (result.failedPages.length) result.warnings.push('PDF_UNREADABLE_PAGES');
+    if (result.truncated) result.warnings.push('PDF_OUTPUT_LIMIT');
+    result.status = !result.pages.some(page => page.text.trim()) ? 'unsupported' : result.warnings.length ? 'partial' : 'read';
+    return result;
+  }
   const visited = new Set();
   let url = source;
   const deadline = Date.now() + 15000;

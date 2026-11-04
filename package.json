@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node src/index.js",
-    "check": "node --check src/index.js && node --check src/moodle.js && node --check src/config.js && node --check src/content.js && node --check src/login.js && node --check src/doctor.js && node --check src/courses.js && node --check src/sections.js && node --check src/resources.js",
+    "check": "node --check src/index.js && node --check src/moodle.js && node --check src/config.js && node --check src/content.js && node --check src/login.js && node --check src/doctor.js && node --check src/courses.js && node --check src/sections.js && node --check src/resources.js && node --check src/pdf.js && node --check src/pdf-worker.js && node --check src/pdf-resource.js",
     "test": "node --test",
     "browser:install": "playwright install chromium",
     "doctor": "node src/doctor.js"
@@ -16,6 +16,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
     "cheerio": "^1.2.0",
+    "pdfjs-dist": "6.5.438",
     "playwright": "^1.64.1",
     "zod": "^4.6.7"
   }

@@ -11,7 +11,7 @@ const secret = 'PRIVATE_COOKIE_PASSWORD_TICKET';
 const html = content => `<body class="course-42"><header>${secret}</header><main id="region-main">${content}</main></body>`;
 const pageHtml = html(`<div class="generalbox"><div class="no-overflow"><h2>Распоред</h2><p>Среда 10:00</p><table><tr><th>Ден</th><th>Лаб</th></tr><tr><td>Среда</td><td>Лаб 2</td></tr></table><form><input value="${secret}"><div>${secret}</div></form><script>${secret}</script><a href="${urlUrl}">Information</a><a href="/login/logout.php?sesskey=${secret}">Logout</a></div></div>`);
 const course = { id: 42, coverage: { partial: false }, sections: [{ resources: [
-  { name: 'Page', url: pageUrl }, { name: 'URL', url: urlUrl }, { name: 'PDF', url: `${base}/mod/resource/view.php?id=13` },
+  { name: 'Page', url: pageUrl }, { name: 'URL', url: urlUrl }, { name: 'Folder', url: `${base}/mod/folder/view.php?id=13` },
 ] }] };
 const wrapper = target => html(`<div class="activity-description">Project instructions</div><div class="urlworkaround"><a href="${target}">${target}</a></div>`);
 function mockRequest(entries) {

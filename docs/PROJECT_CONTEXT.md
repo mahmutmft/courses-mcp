@@ -6,7 +6,7 @@ A personal, read-only MCP server for https://courses.finki.ukim.mk/ that helps a
 
 ## Stack and versions
 
-Node.js >=24, JavaScript ES modules, npm lockfile. The official MCP SDK v1 handles stdio; Zod v4 validates tool inputs; Playwright manages CAS/browser sessions; Cheerio parses HTML. Exact resolved versions are in package-lock.json. Node provides environment loading, syntax checks, and test runner.
+Node.js >=24, JavaScript ES modules, npm lockfile. The official MCP SDK v1 handles stdio; Zod v4 validates tool inputs; Playwright manages CAS/browser sessions; Cheerio parses HTML; pdfjs-dist provides Mozilla PDF.js text extraction in a bounded Node worker. Exact resolved versions are in package-lock.json. Node provides environment loading, syntax checks, and test runner.
 
 ## Architecture and important directories
 
@@ -14,7 +14,9 @@ Node.js >=24, JavaScript ES modules, npm lockfile. The official MCP SDK v1 handl
 - src/moodle.js: serialized browser access, CAS login, enrolled-course AJAX calls, course-page browsing.
 - src/login.js: fixed login error codes, safe failure classification, and browser-side CAS/session outcome detection.
 - src/content.js: HTML parsing, URL restrictions, Unicode search.
-- src/resources.js: authorized discovered-module HTML reader, safe errors, bounded text/table extraction and provenance. External origins, forms, files and unsupported activities remain unread.
+- src/resources.js: authorized discovered-module HTML reader, safe errors, bounded text/table extraction and provenance. External origins, forms, non-PDF files and unsupported activities remain unread.
+- src/pdf-resource.js: allowlisted Moodle file retrieval and safe unsupported/error states.
+- src/pdf.js and src/pdf-worker.js: terminable PDF.js extraction with page/text limits; no OCR or schedule inference.
 - src/sections.js: same-course section discovery, redirect/ownership validation, bounded traversal, merging and safe partial-coverage warnings. Authenticated requests share the browser context's in-memory cookies.
 - src/courses.js: optional list_courses filter schema and academic-year/semester label inference. Filters apply after enrolled pagination; get_course authorization still uses the complete enrollment list.
 - src/index.js: stdio MCP tools; src/doctor.js: live aggregate-only login diagnostic.
@@ -67,3 +69,5 @@ Course filters accept explicit academicYear (consecutive YYYY/YYYY) and semester
 Use issue-linked branches and PRs. Default branch: master. Do not push directly to it. Repository settings and branch protection remain unverified.
 
 The read_resource tool is a separate on-demand reader for supported mod/page and mod/url resources. It reuses get_course authorization/discovery, validates each redirect against discovered module URLs, and returns read/partial/unsupported status, source and checkedAt. Unsupported external targets do not imply empty content. Search scope is unchanged. No schedule interpretation/calendar functionality is implemented by this reader. Tests use synthetic content; live diagnostics print only aggregate status/counts.
+
+PDF parsing is a new documented runtime dependency (pdfjs-dist), chosen for page-cited extraction without a separate Python installation. Parsing uses memory-only buffers and a Node worker with timeout/V8 heap limits, not an OS sandbox or full native-memory bound. download/processing limits and output/status semantics are documented in README. Synthetic PDF fixtures cover normal, blank, invalid, encrypted and truncated inputs; no faculty PDFs are committed.
