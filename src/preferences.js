@@ -56,12 +56,16 @@ export class LabPreferences {
     if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 4096) throw new PreferenceError('INVALID_PREFERENCE_FILE');
     let record;
     try { record = JSON.parse(await readFile(file, 'utf8')); } catch { throw new PreferenceError('INVALID_PREFERENCE_FILE'); }
+    this.validateRecord(record);
+    return record;
+  }
+
+  validateRecord(record) {
     if (!record || Object.keys(record).sort().join(',') !== 'attendance,schemaVersion,updatedAt' || record.schemaVersion !== 1 ||
         !['attending', 'exempt'].includes(record.attendance) || typeof record.updatedAt !== 'string' ||
         !Number.isFinite(Date.parse(record.updatedAt)) || new Date(record.updatedAt).toISOString() !== record.updatedAt) {
       throw new PreferenceError('INVALID_PREFERENCE_FILE');
     }
-    return record;
   }
 
   async get(courseId) {
@@ -73,12 +77,18 @@ export class LabPreferences {
   }
 
   async set(courseId, attendance) {
+    if (!attendanceStates.includes(attendance)) throw new PreferenceError('INVALID_ATTENDANCE');
+    const record = await this.update(courseId, current => attendance === 'unknown' ? null : current?.attendance === attendance ? current
+      : { schemaVersion: 1, attendance, updatedAt: this.now() });
+    return describe(courseId, record);
+  }
+
+  async update(courseId, transform) {
     let lock;
     let acquiredLockPath;
     let temp;
     let handle;
     try {
-      if (!attendanceStates.includes(attendance)) throw new PreferenceError('INVALID_ATTENDANCE');
       const file = this.location(courseId);
       await this.checkDirectories(file, true);
       const lockPath = `${file}.lock`;
@@ -86,13 +96,14 @@ export class LabPreferences {
       catch (error) { if (error.code === 'EEXIST') throw new PreferenceError('PREFERENCE_BUSY'); throw error; }
       acquiredLockPath = lockPath;
       const current = await this.load(file);
-      if (attendance === 'unknown') {
+      const record = transform(current);
+      if (record === null) {
         if (current) await unlink(file);
-        return describe(courseId, null);
+        return null;
       }
-      if (current?.attendance === attendance) return describe(courseId, current);
-      const record = { schemaVersion: 1, attendance, updatedAt: this.now() };
+      if (record === current) return current;
       if (!Number.isFinite(Date.parse(record.updatedAt)) || new Date(record.updatedAt).toISOString() !== record.updatedAt) throw new PreferenceError('INVALID_TIMESTAMP');
+      this.validateRecord(record);
       temp = join(dirname(file), `.${courseId}.${randomUUID()}.tmp`);
       handle = await open(temp, 'wx', 0o600);
       await handle.writeFile(JSON.stringify(record) + '\n');
@@ -101,7 +112,7 @@ export class LabPreferences {
       handle = undefined;
       await rename(temp, file);
       temp = undefined;
-      return describe(courseId, record);
+      return record;
     } catch (error) { if (error instanceof PreferenceError) throw error; throw new PreferenceError('PREFERENCE_WRITE_FAILED'); }
     finally {
       await handle?.close().catch(() => {});
