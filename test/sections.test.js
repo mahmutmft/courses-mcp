@@ -84,7 +84,7 @@ test('page, elapsed-time, section, and resource limits report partial coverage',
     assert.ok(course.sections.flatMap(s => s.resources).length <= limits.resources);
   }
   let tick = 0;
-  const course = await collect(fixtures, { limits: { ...traversalLimits, milliseconds: 5 }, now: () => tick++ }).run();
+  const course = await collect(fixtures, { limits: { ...traversalLimits, milliseconds: 3 }, now: () => tick++ }).run();
   assert.equal(course.coverage.partial, true);
 });
 
@@ -170,4 +170,19 @@ test('Moodle integration authorizes enrollment before using the shared-cookie re
   assert.deepEqual(visited, [root, first, second]);
   await assert.rejects(moodle.getCourse(43), /not in your enrolled/);
   assert.equal(visited.length, 3);
+});
+
+test('independent sections overlap while results retain discovery order', async () => {
+  let releaseFirst;
+  const secondStarted = new Promise(resolve => { releaseFirst = resolve; });
+  const course = await collectCourseSections({
+    courseId: 42, baseUrl: base,
+    readPage: async url => {
+      if (url === first) await secondStarted;
+      if (url === second) releaseFirst();
+      return inspectCoursePage(fixtures.get(url), 42, base);
+    },
+  });
+  assert.deepEqual(course.sections.map(section => section.number), [1, 2]);
+  assert.equal(course.coverage.partial, false);
 });

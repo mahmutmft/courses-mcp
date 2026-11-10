@@ -69,49 +69,54 @@ export async function collectCourseSections({ courseId, baseUrl, readPage, limit
   const warn = (code, url) => { if (!warnings.some(w => w.code === code && w.url === url)) warnings.push({ code, url }); };
   while (pending.length) {
     if (pagesVisited >= limits.pages || now() >= deadline) { warn('TRAVERSAL_LIMIT', rootUrl); break; }
-    const url = pending.shift();
-    pagesVisited++;
-    let page;
-    try { page = await readPage(url, Math.min(10000, Math.max(1, deadline - now()))); }
-    catch (error) {
-      if (url === rootUrl) throw error;
-      warn(error instanceof CoursePageError ? error.code : 'SECTION_UNAVAILABLE', url);
-      continue;
-    }
-    if (url === rootUrl) name = page.course.name;
-    if (!page.course.sections.length) warn('UNSUPPORTED_SECTION_LAYOUT', url);
-    for (const section of page.course.sections) {
-      const key = section.id.includes(':section:text:') ? `${url}:${section.id}` : section.id;
-      if (key !== section.id) warn('SECTION_IDENTITY_UNVERIFIED', url);
-      let target = sections.get(key);
-      // An older section page may omit data-id but retain the same section number.
-      if (!target && section.number !== null) target = [...sections.values()].find(s => s.number === section.number);
-      if (!target) {
-        if (sections.size >= limits.sections) { warn('SECTION_OUTPUT_LIMIT', rootUrl); break; }
-        target = { ...section, resources: [] };
-        sections.set(key, target);
+    // Read independent sections together and merge in discovery order.
+    const batch = pending.splice(0, Math.min(4, limits.pages - pagesVisited));
+    pagesVisited += batch.length;
+    const timeout = Math.min(10000, Math.max(1, deadline - now()));
+    const outcomes = await Promise.allSettled(batch.map(async url => readPage(url, timeout)));
+    for (const [index, outcome] of outcomes.entries()) {
+      const url = batch[index];
+      if (outcome.status === 'rejected') {
+        if (url === rootUrl) throw outcome.reason;
+        warn(outcome.reason instanceof CoursePageError ? outcome.reason.code : 'SECTION_UNAVAILABLE', url);
+        continue;
       }
-      if (section.summary.length > target.summary.length) target.summary = section.summary;
-      if (target.name === 'Section' && section.name !== 'Section') target.name = section.name;
-      for (const item of section.resources) {
-        if (resources.has(item.id)) {
-          const existing = resources.get(item.id);
-          if (item.description.length > existing.description.length) existing.description = item.description;
-          continue;
+      const page = outcome.value;
+      if (url === rootUrl) name = page.course.name;
+      if (!page.course.sections.length) warn('UNSUPPORTED_SECTION_LAYOUT', url);
+      for (const section of page.course.sections) {
+        const key = section.id.includes(':section:text:') ? `${url}:${section.id}` : section.id;
+        if (key !== section.id) warn('SECTION_IDENTITY_UNVERIFIED', url);
+        let target = sections.get(key);
+        // An older section page may omit data-id but retain the same section number.
+        if (!target && section.number !== null) target = [...sections.values()].find(s => s.number === section.number);
+        if (!target) {
+          if (sections.size >= limits.sections) { warn('SECTION_OUTPUT_LIMIT', rootUrl); break; }
+          target = { ...section, resources: [] };
+          sections.set(key, target);
         }
-        if (resources.size >= limits.resources) { warn('RESOURCE_OUTPUT_LIMIT', rootUrl); break; }
-        const copy = { ...item };
-        resources.set(item.id, copy);
-        target.resources.push(copy);
+        if (section.summary.length > target.summary.length) target.summary = section.summary;
+        if (target.name === 'Section' && section.name !== 'Section') target.name = section.name;
+        for (const item of section.resources) {
+          if (resources.has(item.id)) {
+            const existing = resources.get(item.id);
+            if (item.description.length > existing.description.length) existing.description = item.description;
+            continue;
+          }
+          if (resources.size >= limits.resources) { warn('RESOURCE_OUTPUT_LIMIT', rootUrl); break; }
+          const copy = { ...item };
+          resources.set(item.id, copy);
+          target.resources.push(copy);
+        }
       }
-    }
-    for (const value of page.links) {
-      const next = coursePageUrl(value, courseId, baseUrl);
-      if (!next || queued.has(next)) continue;
-      // Bound the queue as well as the number of requests, reporting omitted links.
-      if (queued.size >= limits.pages) { warn('TRAVERSAL_LIMIT', rootUrl); continue; }
-      queued.add(next);
-      pending.push(next);
+      for (const value of page.links) {
+        const next = coursePageUrl(value, courseId, baseUrl);
+        if (!next || queued.has(next)) continue;
+        // Bound the queue as well as the number of requests, reporting omitted links.
+        if (queued.size >= limits.pages) { warn('TRAVERSAL_LIMIT', rootUrl); continue; }
+        queued.add(next);
+        pending.push(next);
+      }
     }
   }
   if (!sections.size) throw new UserError('No supported course sections found. This layout needs an additional parser.');
