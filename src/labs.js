@@ -1,5 +1,6 @@
 import { UserError } from './config.js';
 import { parseChoiceTerm } from './choices.js';
+import { resolveLabTerm } from './lab-terms.js';
 
 export function isMonday(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -23,7 +24,7 @@ function titleDates(text) {
 }
 
 // Course text is evidence, never instructions or permission to write preferences.
-export async function buildLabSchedule({ course, preference, weekStart, readChoice, checkedAt = new Date().toISOString() }) {
+export async function buildLabSchedule({ course, preference, manualTerm, weekStart, readChoice, checkedAt = new Date().toISOString() }) {
   if (!isMonday(weekStart)) throw new UserError('weekStart must be a valid Monday in YYYY-MM-DD format.');
   const end = new Date(`${weekStart}T00:00:00Z`);
   end.setUTCDate(end.getUTCDate() + 6);
@@ -33,20 +34,19 @@ export async function buildLabSchedule({ course, preference, weekStart, readChoi
     scope: 'Title matching plus saved choice. Undated homework is linked to its presentation term, not confirmed in this week. Supported assignment enrichment is reported separately; quiz details and announcements are not read; cancellations are unchecked. Empty results never prove no labs.' };
   if (preference.attendance === 'exempt') { result.status = 'exempt'; return result; }
   const resources = course.sections.flatMap(section => section.resources.map(resource => ({ ...resource, sectionName: section.name })));
-  const choices = resources.filter(resource => type(resource) === 'choice' && labWords.test(resource.name));
-  if (choices.length !== 1) {
-    result.warnings.push(choices.length ? 'MULTIPLE_LAB_CHOICES' : 'NO_LAB_CHOICE');
+  const choices = resources.filter(resource => type(resource) === 'choice' && (labWords.test(resource.name) ||
+    (manualTerm?.term?.choiceId && Number(new URL(resource.url).searchParams.get('id')) === manualTerm.term.choiceId)));
+  const resolution = await resolveLabTerm({ manual: manualTerm, choices, readChoice });
+  result.termResolution = resolution;
+  result.warnings.push(...resolution.warnings);
+  if (resolution.status !== 'resolved') {
+    if (!result.warnings.length) result.warnings.push('SAVED_TERM_UNRESOLVED');
     return result;
   }
-  let selection;
-  try { selection = await readChoice(Number(new URL(choices[0].url).searchParams.get('id'))); }
-  catch { result.warnings.push('CHOICE_READ_FAILED'); return result; }
-  if (selection.status !== 'selected' || !selection.term?.weekday || !selection.term?.startTime) {
-    result.warnings.push('SAVED_TERM_UNRESOLVED'); return result;
-  }
-  result.selectionSource = { url: selection.sourceUrl, checkedAt: selection.checkedAt, term: selection.term };
+  result.selectionSource = { url: resolution.pollSource?.url ?? null, checkedAt: resolution.pollSource?.checkedAt ?? null,
+    term: resolution.term, fieldSources: resolution.fieldSources, manualUpdatedAt: manualTerm?.updatedAt ?? null };
   if (course.coverage?.partial) result.warnings.push('PARTIAL_COURSE_COVERAGE');
-  const selected = selection.term;
+  const selected = resolution.term;
   for (const resource of resources) {
     if (!['assign', 'quiz'].includes(type(resource)) || !labWords.test(`${resource.sectionName} ${resource.name}`)) continue;
     if (/откаж|премест|cancel|reschedul|anulu|shtyr/iu.test(resource.name)) {

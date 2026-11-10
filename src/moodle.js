@@ -5,6 +5,7 @@ import { collectCourseSections, readCoursePage } from './sections.js';
 import { readResourceContent } from './resources.js';
 import { readChoiceSelection } from './choices.js';
 import { LabPreferences } from './preferences.js';
+import { LabTermPreferences } from './lab-terms.js';
 import { buildLabSchedule, isMonday } from './labs.js';
 import { readAssignment, enrichLabHomework } from './assignments.js';
 import { readAnnouncements } from './forums.js';
@@ -14,10 +15,11 @@ const MOODLE = 'https://courses.finki.ukim.mk';
 const CAS = 'https://cas.finki.ukim.mk';
 
 export class Moodle {
-  constructor(config, { launchBrowser = () => chromium.launch({ headless: true }), preferences = new LabPreferences(config) } = {}) {
+  constructor(config, { launchBrowser = () => chromium.launch({ headless: true }), preferences = new LabPreferences(config), termPreferences = new LabTermPreferences(config) } = {}) {
     this.config = config;
     this.launchBrowser = launchBrowser;
     this.preferences = preferences;
+    this.termPreferences = termPreferences;
     this.queue = Promise.resolve();
   }
 
@@ -181,9 +183,21 @@ export class Moodle {
     const preference = await this.labPreference(courseId);
     const course = preference.attendance === 'exempt' ? { id: courseId, sections: [], coverage: { skipped: 'user_declared_exemption' } }
       : await this.getCourse(courseId);
-    const schedule = await buildLabSchedule({ course, preference, weekStart,
+    const manualTerm = preference.attendance === 'exempt' ? null : await this.termPreferences.getTerm(courseId);
+    const schedule = await buildLabSchedule({ course, preference, manualTerm, weekStart,
       readChoice: choiceId => readChoiceSelection({ request: this.page.context().request, course, choiceId }) });
     return enrichLabHomework(schedule, (assignmentId, timeout) =>
       readAssignment({ request: this.page.context().request, course, assignmentId, timeout }));
+  }
+
+  async labTermPreference(courseId, term) {
+    const { courses } = await this.listCourses();
+    if (!courses.some(course => course.id === courseId)) throw new UserError('Course is not in your enrolled course list.');
+    if (term?.choiceId) {
+      const course = await this.getCourse(courseId);
+      const url = `${MOODLE}/mod/choice/view.php?id=${term.choiceId}`;
+      if (!course.sections.some(section => section.resources.some(resource => resource.url === url))) throw new UserError('Selected choice is not in this course discovery result.');
+    }
+    return term === undefined ? this.termPreferences.getTerm(courseId) : this.termPreferences.setTerm(courseId, term);
   }
 }

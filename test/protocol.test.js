@@ -16,13 +16,21 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
   try {
     await client.connect(transport);
     const { tools } = await client.listTools();
-    assert.deepEqual(tools.map(tool => tool.name).sort(), ['get_announcements', 'get_assignment', 'get_choice_selection', 'get_course', 'get_lab_preference', 'get_lab_schedule', 'list_courses', 'read_resource', 'search_course', 'set_lab_preference']);
+    assert.deepEqual(tools.map(tool => tool.name).sort(), ['get_announcements', 'get_assignment', 'get_choice_selection', 'get_course', 'get_lab_preference', 'get_lab_schedule', 'get_lab_term_preference', 'list_courses', 'read_resource', 'search_course', 'set_lab_preference', 'set_lab_term_preference']);
     for (const weekStart of ['2026-02-30', '2026-11-03', 'current']) {
       const invalidWeek = await client.callTool({ name: 'get_lab_schedule', arguments: { courseId: 42, weekStart } });
       assert.equal(invalidWeek.isError, true);
       assert.doesNotMatch(invalidWeek.content[0].text, /Fill MOODLE_USERNAME/);
     }
-    assert.ok(tools.filter(tool => tool.name !== 'set_lab_preference').every(tool => tool.annotations.readOnlyHint));
+    assert.ok(tools.filter(tool => !['set_lab_preference', 'set_lab_term_preference'].includes(tool.name)).every(tool => tool.annotations.readOnlyHint));
+    const termSetter = tools.find(tool => tool.name === 'set_lab_term_preference');
+    assert.equal(termSetter.annotations.readOnlyHint, false);
+    assert.equal(termSetter.annotations.openWorldHint, false);
+    for (const term of [{}, { group: 'B', extra: 'private' }, { startTime: '25:00' }, { endTime: '10:00' }]) {
+      const invalidTerm = await client.callTool({ name: 'set_lab_term_preference', arguments: { courseId: 42, term } });
+      assert.equal(invalidTerm.isError, true);
+      assert.doesNotMatch(invalidTerm.content[0].text, /Fill MOODLE_USERNAME/);
+    }
     const setter = tools.find(tool => tool.name === 'set_lab_preference');
     assert.equal(setter.annotations.readOnlyHint, false);
     assert.equal(setter.annotations.openWorldHint, false);
