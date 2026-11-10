@@ -200,7 +200,9 @@ Tests include HTML parsing, source URL restrictions, Unicode search, configurati
 
 Dependencies: the official MCP SDK implements protocol/stdio; Zod validates tool inputs; Playwright handles CAS and authenticated Moodle browser access; Cheerio parses course HTML; Mozilla PDF.js (pdfjs-dist) extracts PDF text without requiring a Python runtime. Node's built-in environment loader and test runner avoid extra dependencies.
 
-Follow AGENTS.md and CONTRIBUTING.md: issue → issue-linked branch → PR → CI and review → merge. Default branch: master. See docs/PROJECT_CONTEXT.md and docs/SETUP_CHECKLIST.md.
+## Contributing
+
+New contributors are welcome, and no Moodle credentials or repository write access are needed: fork-based pull requests and the synthetic offline tests work without them. Pick an issue from the [good first issues](https://github.com/mahmutmft/courses-mcp/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22good%20first%20issue%22) or [help wanted issues](https://github.com/mahmutmft/courses-mcp/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22help%20wanted%22) queries, or from the [v1 tracker #28](https://github.com/mahmutmft/courses-mcp/issues/28). Comment on the issue, check its dependencies and coordinate with the maintainer before starting. The full contribution workflow lives in [CONTRIBUTING.md](CONTRIBUTING.md); see also AGENTS.md, docs/PROJECT_CONTEXT.md and docs/SETUP_CHECKLIST.md.
 
 ## Lab homework and saved presentation terms
 
