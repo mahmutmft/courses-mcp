@@ -16,6 +16,8 @@ const server = new McpServer({ name: 'finki-courses', version: '0.1.0' }, {
 });
 const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true };
 const courseId = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
+register('get_lab_timetable', 'Extract conservative lab timetable candidates from one currently discovered supported Moodle HTML/text-PDF resource. Returns group, day/time/room, explicit dates/effective periods, timezone and table-row/PDF-page provenance. Missing/conflicting fields and overlapping versions remain explicit. All groups are returned; no roster inference, recurring occurrence expansion, cancellations or confirmed personal attendance.',
+  { courseId, resourceId: courseId }, args => moodle.getLabTimetable(args.courseId, args.resourceId));
 register('get_folder', 'List files and nested directories from a currently discovered enrolled-course folder and allowed child folders. Returns stable fileIds, explicit unsupported types and bounded traversal coverage; does not download files. Unsafe links are omitted with warnings, not followed.',
   { courseId, folderId: courseId }, args => moodle.getFolder(args.courseId, args.folderId));
 register('read_folder_file', 'Read page-cited text from one currently discovered folder PDF using a fileId from get_folder. Rechecks enrollment and current folder discovery. No arbitrary URL inputs, bulk downloads, OCR, non-PDF reading or content persistence.',

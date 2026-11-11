@@ -46,7 +46,9 @@ export function parseResourceHtml(html, courseId, url, allowed) {
       });
       rows.push(cells);
     });
-    tables.push({ rows });
+    const unsupportedLayout = $(table).find('[rowspan],[colspan],table').toArray().some(cell =>
+      cell.tagName === 'table' || Number($(cell).attr('rowspan') || 1) !== 1 || Number($(cell).attr('colspan') || 1) !== 1);
+    tables.push({ rows, ...(unsupportedLayout ? { unsupportedLayout: true } : {}) });
   });
   const links = new Set();
   content.find('a[href]').each((_, anchor) => {

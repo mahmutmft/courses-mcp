@@ -10,6 +10,7 @@ import { buildLabSchedule, isMonday } from './labs.js';
 import { readAssignment, enrichLabHomework } from './assignments.js';
 import { readAnnouncements } from './forums.js';
 import { collectFolder, readFolderFile } from './folders.js';
+import { extractTimetable } from './timetables.js';
 import { LoginError, classifyLoginError, loginOutcome } from './login.js';
 
 const MOODLE = 'https://courses.finki.ukim.mk';
@@ -156,6 +157,10 @@ export class Moodle {
   async readResource(courseId, resourceId) {
     const course = await this.getCourse(courseId);
     return readResourceContent({ request: this.page.context().request, course, resourceId });
+  }
+
+  async getLabTimetable(courseId, resourceId) {
+    return extractTimetable(await this.readResource(courseId, resourceId));
   }
 
   async getAssignment(courseId, assignmentId) {
