@@ -35,3 +35,19 @@ Weekly and alternating rules are recorded only when explicit. Alternating rules 
 Existing HTML/PDF reader limits apply first. The extractor inspects at most 10 tables, 100 data rows per table, 30 PDF pages, 60k text characters and 1,000 text lines per block; it retains at most 200 unique entries and inspects at most 1,000 candidate records. Output warnings identify limits rather than implying complete source coverage. Parsing is deterministic, bounded and uses no model/provider dependency. Supported extraction is tested with synthetic MK/EN/SQ tables, selected dates, bounded/alternating rules, overlapping versions, missing/invalid fields, merged cells, roster/injection-shaped data, partial/image-only sources and a real PDF-worker pipeline fixture. No private faculty schedules are committed.
 
 Restart the MCP connection after updating to discover the new read-only tool. Faculty documents with unsupported layouts can still be read through read_resource; this extractor reports its narrower supported grammar explicitly.
+
+### Expand dates in a requested range
+
+Pass optional `occurrenceRange` to `get_lab_timetable`, for example
+`{"from":"2026-11-09","through":"2026-11-15"}`. The inclusive range accepts
+1–31 dates. The response adds `expansion` with local occurrences and unresolved
+entry IDs and warnings. Without a range, the original timetable response applies.
+
+Explicit dates are clipped to the request. Weekly and alternating rules also
+require both effective dates. For alternating rules, the anchor must fall within
+the effective period and identifies an active Monday-start week. Local times stay
+the same across daylight saving changes and the result carries the source timezone.
+An absent end time stays null. Occurrences are deduplicated by course, group, local
+date, time, room and timezone, with source locations retained. An empty result
+does not establish absence. All groups remain in scope and cancellation checks are
+handled separately.
