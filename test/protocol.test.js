@@ -16,7 +16,7 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
   try {
     await client.connect(transport);
     const { tools } = await client.listTools();
-    assert.deepEqual(tools.map(tool => tool.name).sort(), ['get_announcements', 'get_assignment', 'get_choice_selection', 'get_course', 'get_folder', 'get_lab_preference', 'get_lab_schedule', 'get_lab_term_preference', 'get_lab_timetable', 'list_courses', 'read_folder_file', 'read_resource', 'search_course', 'set_lab_preference', 'set_lab_term_preference']);
+    assert.deepEqual(tools.map(tool => tool.name).sort(), ['get_announcements', 'get_assignment', 'get_choice_selection', 'get_course', 'get_folder', 'get_lab_preference', 'get_lab_schedule', 'get_lab_term_preference', 'get_lab_timetable', 'get_quiz', 'list_courses', 'read_folder_file', 'read_resource', 'search_course', 'set_lab_preference', 'set_lab_term_preference']);
     for (const weekStart of ['2026-02-30', '2026-11-03', 'current']) {
       const invalidWeek = await client.callTool({ name: 'get_lab_schedule', arguments: { courseId: 42, weekStart } });
       assert.equal(invalidWeek.isError, true);

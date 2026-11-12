@@ -7,7 +7,7 @@ import { readChoiceSelection } from './choices.js';
 import { LabPreferences } from './preferences.js';
 import { LabTermPreferences } from './lab-terms.js';
 import { buildLabSchedule, isMonday } from './labs.js';
-import { readAssignment, enrichLabHomework } from './assignments.js';
+import { readAssignment, readQuiz, enrichLabHomework } from './assignments.js';
 import { readAnnouncements } from './forums.js';
 import { collectFolder, readFolderFile } from './folders.js';
 import { extractTimetable } from './timetables.js';
@@ -161,6 +161,11 @@ export class Moodle {
 
   async getLabTimetable(courseId, resourceId) {
     return extractTimetable(await this.readResource(courseId, resourceId));
+  }
+
+  async getQuiz(courseId, quizId) {
+    const course = await this.getCourse(courseId);
+    return readQuiz({ request: this.page.context().request, course, quizId });
   }
 
   async getAssignment(courseId, assignmentId) {

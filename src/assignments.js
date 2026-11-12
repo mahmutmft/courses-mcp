@@ -49,75 +49,112 @@ export class AssignmentError extends UserError {
   constructor(code) { super(`Assignment could not be read (${code}).`); this.code = code; }
 }
 
+const quizLabels = {
+  opened: [...labels.opened, 'open', 'open the quiz', 'се отвора на', 'hapja'],
+  closes: ['closes', 'closed', 'close', 'close the quiz', 'се затвора', 'затворено', 'затворена', 'mbyllet', 'mbyllja'],
+};
+
+class QuizError extends UserError {
+  constructor(code) { super(`Quiz could not be read (${code}).`); this.code = code; }
+}
+
 export function parseAssignmentHtml(html, courseId) {
+  return parseActivityHtml(html, courseId);
+}
+
+export function parseQuizHtml(html, courseId, quizId) {
+  return parseActivityHtml(html, courseId, quizId);
+}
+
+function parseActivityHtml(html, courseId, quizId) {
+  const quiz = quizId !== undefined;
+  const kind = quiz ? 'QUIZ' : 'ASSIGNMENT';
+  const ErrorType = quiz ? QuizError : AssignmentError;
+  const dateLabels = quiz ? quizLabels : labels;
   const $ = load(html);
   const identities = ($('body').attr('class') || '').split(/\s+/).filter(c => /^course-\d+$/.test(c));
-  if (identities.length !== 1 || identities[0] !== `course-${courseId}`) throw new AssignmentError('ASSIGNMENT_OWNERSHIP_UNVERIFIED');
-  if ($('body').attr('id') !== 'page-mod-assign-view') throw new AssignmentError('UNSUPPORTED_ASSIGNMENT_LAYOUT');
-  if ($('#notice, .errorcode, .alert-danger').length) throw new AssignmentError('ASSIGNMENT_ACCESS_UNAVAILABLE');
+  if (identities.length !== 1 || identities[0] !== `course-${courseId}`) throw new ErrorType(`${kind}_OWNERSHIP_UNVERIFIED`);
+  if (quiz && ($('body').attr('class') || '').split(/\s+/).filter(c => /^cmid-\d+$/.test(c)).join() !== `cmid-${quizId}`) {
+    throw new QuizError('QUIZ_OWNERSHIP_UNVERIFIED');
+  }
+  if ($('body').attr('id') !== (quiz ? 'page-mod-quiz-view' : 'page-mod-assign-view')) throw new ErrorType(`UNSUPPORTED_${kind}_LAYOUT`);
+  if ($('#notice, .errorcode, .alert-danger').length) throw new ErrorType(`${kind}_ACCESS_UNAVAILABLE`);
   $('script,style,noscript,form,input,button,select,textarea,iframe,nav,[hidden],[aria-hidden="true"],.accesshide,.sr-only,.activity-attachments').remove();
+  if (quiz) $('.que, .quizattemptsummary, .quizreviewsummary, .quizattempt, .grade, #feedback, [data-region="quiz-attempts"]').remove();
   const root = $('#region-main');
   const intro = root.find('#intro');
-  const dates = { opened: null, due: null, cutoff: null };
+  const dates = Object.fromEntries(Object.keys(dateLabels).map(field => [field, null]));
   const warnings = [];
-  const seen = { opened: [], due: [], cutoff: [] };
+  const seen = Object.fromEntries(Object.keys(dates).map(field => [field, []]));
   const invalid = new Set();
   const rows = root.find('[data-region="activity-dates"] > div, .activity-dates > div');
-  if (rows.length > 10) warnings.push('ASSIGNMENT_DATE_LIMIT');
+  if (rows.length > 10) warnings.push(`${kind}_DATE_LIMIT`);
   rows.slice(0, 10).each((_, element) => {
     const row = $(element).clone();
     const label = clean(row.find('strong').first().text()).replace(/:$/, '').trim();
-    const field = Object.keys(labels).find(key => labels[key].includes(label.toLowerCase()));
-    if (!field) { warnings.push('ASSIGNMENT_DATE_LABEL_UNRECOGNIZED'); return; }
+    const field = Object.keys(dateLabels).find(key => dateLabels[key].includes(label.toLowerCase()));
+    if (!field) { warnings.push(`${kind}_DATE_LABEL_UNRECOGNIZED`); return; }
     row.find('strong').first().remove();
     const raw = clean(row.text());
     const times = row.find('time[datetime]');
-    if (raw.length > 500 || label.length > 80 || times.length > 1) { invalid.add(field); warnings.push('ASSIGNMENT_DATE_UNRESOLVED'); return; }
+    if (raw.length > 500 || label.length > 80 || times.length > 1) { invalid.add(field); warnings.push(`${kind}_DATE_UNRESOLVED`); return; }
     seen[field].push({ label, raw, ...parseAssignmentDate(raw, times.first().attr('datetime')) });
   });
   for (const field of Object.keys(dates)) {
     const entries = seen[field];
     if (invalid.has(field)) continue;
     if (!entries.length) continue;
-    if (new Set(entries.map(entry => JSON.stringify(entry))).size > 1) { warnings.push('CONFLICTING_ASSIGNMENT_DATES'); continue; }
+    if (new Set(entries.map(entry => JSON.stringify(entry))).size > 1) { warnings.push(`CONFLICTING_${kind}_DATES`); continue; }
     dates[field] = entries[0];
-    if (dates[field].parsing === 'unresolved') warnings.push('ASSIGNMENT_DATE_UNRESOLVED');
-    else if (!dates[field].timeZone) warnings.push('ASSIGNMENT_TIMEZONE_UNKNOWN');
+    if (dates[field].parsing === 'unresolved') warnings.push(`${kind}_DATE_UNRESOLVED`);
+    else if (!dates[field].timeZone) warnings.push(`${kind}_TIMEZONE_UNKNOWN`);
   }
   intro.find('br').replaceWith('\n');
   intro.find('p,div,tr,li,h1,h2,h3,h4').append('\n');
   intro.find('td,th').append(' ');
   const text = intro.text().split('\n').map(clean).filter(Boolean).join('\n');
   const truncated = text.length > 10000;
-  if (truncated) warnings.push('ASSIGNMENT_OUTPUT_LIMIT');
-  if (!intro.length) warnings.push('ASSIGNMENT_DESCRIPTION_UNAVAILABLE');
-  if (!Object.values(dates).some(Boolean)) warnings.push('ASSIGNMENT_DATES_NOT_PUBLISHED_OR_UNSUPPORTED');
-  if (!intro.length && !rows.length) throw new AssignmentError('UNSUPPORTED_ASSIGNMENT_LAYOUT');
+  if (truncated) warnings.push(`${kind}_OUTPUT_LIMIT`);
+  if (!intro.length) warnings.push(`${kind}_DESCRIPTION_UNAVAILABLE`);
+  if (!Object.values(dates).some(Boolean)) warnings.push(`${kind}_DATES_NOT_PUBLISHED_OR_UNSUPPORTED`);
+  if (!intro.length && !rows.length) throw new ErrorType(`UNSUPPORTED_${kind}_LAYOUT`);
   return { description: text.slice(0, 10000), dates, truncated, warnings: [...new Set(warnings)] };
 }
 
-export async function readAssignment({ request, course, assignmentId, timeout = 15000, now = () => new Date().toISOString() }) {
-  if (!Number.isSafeInteger(assignmentId) || assignmentId < 1) throw new UserError('assignmentId must be a positive safe integer.');
-  const sourceUrl = `${base}/mod/assign/view.php?id=${assignmentId}`;
+export function readAssignment(options) {
+  return readActivity(options);
+}
+
+export function readQuiz(options) {
+  return readActivity(options);
+}
+
+async function readActivity({ request, course, assignmentId, quizId, timeout = 15000, now = () => new Date().toISOString() }) {
+  const quiz = quizId !== undefined;
+  const kind = quiz ? 'QUIZ' : 'ASSIGNMENT';
+  const ErrorType = quiz ? QuizError : AssignmentError;
+  const activityId = quiz ? quizId : assignmentId;
+  if (!Number.isSafeInteger(activityId) || activityId < 1) throw new UserError(`${quiz ? 'quizId' : 'assignmentId'} must be a positive safe integer.`);
+  const sourceUrl = `${base}/mod/${quiz ? 'quiz' : 'assign'}/view.php?id=${activityId}`;
   const resource = course.sections.flatMap(section => section.resources).find(item => item.url === sourceUrl);
-  if (!resource) throw new UserError('Assignment is not in this course discovery result. Check get_course and its coverage warnings.');
+  if (!resource) throw new UserError(`${quiz ? 'Quiz' : 'Assignment'} is not in this course discovery result. Check get_course and its coverage warnings.`);
   let response;
   try {
     response = await request.get(sourceUrl, { maxRedirects: 0, timeout: Math.max(1, Math.min(timeout, 15000)) });
-    if (response.status() >= 300 && response.status() < 400) throw new AssignmentError('ASSIGNMENT_REDIRECT_NOT_FOLLOWED');
-    if (response.status() !== 200) throw new AssignmentError('ASSIGNMENT_ACCESS_UNAVAILABLE');
-    if (!/^text\/html(?:;|$)/i.test(response.headers()['content-type'] || '')) throw new AssignmentError('UNSUPPORTED_ASSIGNMENT_CONTENT_TYPE');
-    if (Number(response.headers()['content-length']) > 2 * 1024 * 1024) throw new AssignmentError('ASSIGNMENT_SIZE_LIMIT');
+    if (response.status() >= 300 && response.status() < 400) throw new ErrorType(`${kind}_REDIRECT_NOT_FOLLOWED`);
+    if (response.status() !== 200) throw new ErrorType(`${kind}_ACCESS_UNAVAILABLE`);
+    if (!/^text\/html(?:;|$)/i.test(response.headers()['content-type'] || '')) throw new ErrorType(`UNSUPPORTED_${kind}_CONTENT_TYPE`);
+    if (Number(response.headers()['content-length']) > 2 * 1024 * 1024) throw new ErrorType(`${kind}_SIZE_LIMIT`);
     const body = await response.body();
-    if (body.byteLength > 2 * 1024 * 1024) throw new AssignmentError('ASSIGNMENT_SIZE_LIMIT');
-    const parsed = parseAssignmentHtml(body.toString('utf8'), course.id);
+    if (body.byteLength > 2 * 1024 * 1024) throw new ErrorType(`${kind}_SIZE_LIMIT`);
+    const parsed = parseActivityHtml(body.toString('utf8'), course.id, quizId);
     if (course.coverage?.partial) parsed.warnings.push('PARTIAL_COURSE_COVERAGE');
-    return { courseId: course.id, assignmentId, name: resource.name, sourceUrl, checkedAt: now(),
+    return { courseId: course.id, ...(quiz ? { quizId } : { assignmentId }), name: resource.name, sourceUrl, checkedAt: now(),
       status: parsed.warnings.length ? 'partial' : 'read', ...parsed, coverage: course.coverage,
-      scope: 'Assignment description and supported published activity date fields only. No submissions, grades, feedback, attachments, forms or participant data. Dates are not lab occurrence dates; display dates without offsets have unknown timezone.' };
+      scope: quiz ? 'Quiz description and published opening and closing dates only. Display dates without offsets have unknown timezone. Dates do not establish lab occurrences.' : 'Assignment description and supported published activity date fields only. No submissions, grades, feedback, attachments, forms or participant data. Dates are not lab occurrence dates; display dates without offsets have unknown timezone.' };
   } catch (error) {
     if (error instanceof UserError) throw error;
-    throw new AssignmentError(error instanceof errors.TimeoutError ? 'ASSIGNMENT_TIMEOUT' : 'ASSIGNMENT_NETWORK_FAILURE');
+    throw new ErrorType(error instanceof errors.TimeoutError ? `${kind}_TIMEOUT` : `${kind}_NETWORK_FAILURE`);
   } finally { await response?.dispose().catch(() => {}); }
 }
 
