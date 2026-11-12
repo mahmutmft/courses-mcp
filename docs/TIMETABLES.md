@@ -51,3 +51,24 @@ An absent end time stays null. Occurrences are deduplicated by course, group, lo
 date, time, room and timezone, with source locations retained. An empty result
 does not establish absence. All groups remain in scope and cancellation checks are
 handled separately.
+
+### Check explicit announcement changes
+
+With an occurrence range, pass an optional announcementForumId for a discovered
+news forum in the same course. The resolver recognizes these standalone lines
+in starter posts with a verified publication timestamp:
+
+~~~text
+Lab change: cancel | A | 2026-11-10 14:00
+Lab change: move | A | 2026-11-10 14:00 | 2026-11-12 15:00-16:00 | 200ab
+~~~
+
+Macedonian and Albanian prefixes/actions are also accepted. Match the original
+group, local date and start time uniquely. The replacement inherits the source
+timezone and original ID, and may extend beyond the requested range. Omitted
+replacement end times remain unknown. Identical changes preserve all citations.
+Disagreements return competing proposals, including publication and check times.
+This grammar covers individually superseded slots. Whole timetable revisions,
+free-form posts and moves into the window from outside it require further evidence.
+An unavailable or partial forum read preserves timetable candidates and reports
+partial coverage. Empty results do not establish absence.
