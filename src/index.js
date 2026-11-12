@@ -1,8 +1,9 @@
+import { resolveLabChanges } from './scheduling/lab-changes.js';
 import { expandLabOccurrences, isOccurrenceRange } from './scheduling/occurrences.ts';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { loadLocalEnv, loadConfig, safeError } from './config.js';
+import { loadLocalEnv, loadConfig, safeError, UserError } from './config.js';
 import { Moodle } from './moodle.js';
 import { searchCourse } from './content.js';
 import { courseFilters, filterCourseList } from './courses.js';
@@ -17,15 +18,26 @@ const server = new McpServer({ name: 'finki-courses', version: '0.1.0' }, {
 });
 const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true };
 const courseId = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
-register('get_lab_timetable', 'Extract conservative lab timetable candidates from one currently discovered supported Moodle HTML/text-PDF resource. Returns group, day/time/room, explicit dates/effective periods, timezone and table-row/PDF-page provenance. Missing/conflicting fields and overlapping versions remain explicit. All groups are returned. Optional occurrenceRange expands explicit dates and bounded recurring rules into local timetable candidates. No roster inference, cancellation handling or confirmed personal attendance.',
+register('get_lab_timetable', 'Extract conservative lab timetable candidates from one currently discovered supported Moodle HTML/text-PDF resource. Returns group, day/time/room, explicit dates/effective periods, timezone and table-row/PDF-page provenance. Missing/conflicting fields and overlapping versions remain explicit. All groups are returned. Optional occurrenceRange expands explicit dates and bounded recurring rules into local timetable candidates. Optional announcementForumId checks explicit lab changes in one discovered news forum when a range is provided. No roster inference or confirmed personal attendance.',
   {
     courseId,
     resourceId: courseId,
+    announcementForumId: courseId.optional(),
     occurrenceRange: z.object({ from: z.string(), through: z.string() })
       .refine(isOccurrenceRange, 'Use an inclusive range of 1 to 31 valid YYYY-MM-DD dates.').optional(),
-  }, async ({ courseId, resourceId, occurrenceRange }) => {
+  }, async ({ courseId, resourceId, occurrenceRange, announcementForumId }) => {
+    if (announcementForumId && !occurrenceRange) throw new UserError('announcementForumId requires occurrenceRange.');
     const timetable = await moodle.getLabTimetable(courseId, resourceId);
-    return occurrenceRange ? { ...timetable, expansion: expandLabOccurrences(timetable.entries, occurrenceRange) } : timetable;
+    if (!occurrenceRange) return timetable;
+    const expansion = expandLabOccurrences(timetable.entries, occurrenceRange);
+    if (!announcementForumId) return { ...timetable, expansion };
+    let announcements;
+    try {
+      announcements = await moodle.getAnnouncements(courseId, announcementForumId);
+    } catch {
+      announcements = null;
+    }
+    return { ...timetable, expansion, announcementChanges: resolveLabChanges(expansion, announcements) };
   });
 register('get_folder', 'List files and nested directories from a currently discovered enrolled-course folder and allowed child folders. Returns stable fileIds, explicit unsupported types and bounded traversal coverage; does not download files. Unsafe links are omitted with warnings, not followed.',
   { courseId, folderId: courseId }, args => moodle.getFolder(args.courseId, args.folderId));
