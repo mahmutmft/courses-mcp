@@ -50,10 +50,10 @@ export class LabPreferences {
     } catch (error) { if (error.code !== 'ENOENT') throw error; }
   }
 
-  async load(file) {
+  async load(file, maxBytes = 4096) {
     let stat;
     try { stat = await lstat(file); } catch (error) { if (error.code === 'ENOENT') return null; throw error; }
-    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 4096) throw new PreferenceError('INVALID_PREFERENCE_FILE');
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > maxBytes) throw new PreferenceError('INVALID_PREFERENCE_FILE');
     let record;
     try { record = JSON.parse(await readFile(file, 'utf8')); } catch { throw new PreferenceError('INVALID_PREFERENCE_FILE'); }
     this.validateRecord(record);
