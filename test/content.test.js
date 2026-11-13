@@ -1,15 +1,11 @@
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseCourse, sourceUrl, searchCourse, normalizeCourses } from '../src/content.js';
 import { loadConfig, safeError, UserError, isCasLogin } from '../src/config.js';
 
 const base = 'https://courses.finki.ukim.mk';
-const html = `<h1>Algorithms &amp; Data</h1><ul><li class="section" data-for="section">
-<h3 class="sectionname">Недела 1</h3><div class="summary">Вежби и материјали</div>
-<ul><li class="activity" data-for="cmitem"><a href="/mod/resource/view.php?id=12"><span class="instancename">Lecture slides</span></a><div class="description">Binary trees</div></li>
-<li class="activity"><div class="contentwithoutlink">Read chapter one</div></li>
-<li class="activity"><a href="https://evil.example/mod/resource/view.php?id=3">Bad link</a></li></ul>
-</li></ul>`;
+const html = readFileSync(new URL('./fixtures/compat-v1/course.html', import.meta.url), 'utf8');
 
 test('parses sections once, decodes text, and preserves read-only source URLs', () => {
   const course = parseCourse(html, 42, base);

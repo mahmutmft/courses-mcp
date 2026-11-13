@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { errors } from 'playwright';
@@ -17,7 +18,7 @@ const links = (...urls) => urls.map(url => `<a href="${url.replaceAll('&', '&amp
 const fixtures = new Map([
   [root, page(block(101, 1, 'One', 1) + links(first, `${second}#top`, first, `${base}/course/view.php?id=43&section=1`))],
   [first, page(block(101, 1, 'One', 1, 'New detail') + block(101, 1, 'One', 2) + links(root, second))],
-  [second, page(block(102, 2, 'Two', 3, 'Unique search phrase') + links(first, second))],
+  [second, readFileSync(new URL('./fixtures/compat-v1/separate-section.html', import.meta.url), 'utf8')],
 ]);
 
 function collect(pages = fixtures, overrides = {}) {
