@@ -61,3 +61,24 @@ test('nonadvancing dashboard cursor reports partial enrollment coverage', async 
   assert.deepEqual(offsets, [0, 1]);
   assert.equal(result.truncated, true);
 });
+
+test('dashboard streams bounded JSON and cancels an oversized body', async t => {
+  t.mock.method(globalThis, 'fetch', async () => new Response('[{"data":{"courses":[]}}]'));
+  const moodle = new Moodle({});
+  const previous = globalThis.M;
+  globalThis.M = { cfg: { sesskey: 'synthetic' } };
+  t.after(() => { if (previous === undefined) delete globalThis.M; else globalThis.M = previous; });
+  moodle.page = { evaluate: (fn, args) => fn(args) };
+  assert.deepEqual(await moodle.ajax('fixture', {}), { courses: [] });
+
+  let cancelled = false;
+  globalThis.fetch.mock.mockImplementation(async () => new Response(new ReadableStream({
+    pull(controller) { controller.enqueue(new Uint8Array(1024 * 1024)); },
+    cancel() { cancelled = true; },
+  })));
+  await assert.rejects(moodle.ajax('fixture', {}), /COURSE_API_SIZE_LIMIT/);
+  assert.equal(cancelled, true);
+
+  globalThis.fetch.mock.mockImplementation(async () => new Response('<html>synthetic private text</html>'));
+  await assert.rejects(moodle.ajax('fixture', {}), { message: /COURSE_API_FORMAT/ });
+});
