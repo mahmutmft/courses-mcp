@@ -16,7 +16,7 @@ Safer login diagnostics from [issue #4](https://github.com/mahmutmft/courses-mcp
 
 Course filters ([PR #9](https://github.com/mahmutmft/courses-mcp/pull/9)) and bounded, deduplicated traversal of supported separate section pages ([PR #13](https://github.com/mahmutmft/courses-mcp/pull/13)) are merged. Coverage warnings disclose detected gaps. These are implemented parts of v0.2, not a published v0.2 release.
 
-Supported Moodle page/URL-resource HTML reading is merged in PR #17. Text-PDF reading is being implemented in #18 and is not yet a released capability. Current limitations: external linked content, folder contents and non-PDF file contents are not read; no lab timetable interpretation, weekly lab check, personal calendar, local search index, deadline tools, synchronization, dashboard, or multi-user service exists. The immediate next priority is linked content reading, followed by evidence-backed lab scheduling as detailed below.
+The current server reads supported Moodle HTML, text PDFs, folders, saved choices, assignments, quiz metadata and announcements. Published coursework dates can be aggregated across selected courses. Lab tools extract dated timetable candidates, expand bounded recurrence and handle explicitly formatted announcements. The private course cache is an internal foundation. See the [MCP contracts](MCP-CONTRACTS.md) for available tools and limits.
 
 ## Path to v1.0
 
@@ -90,7 +90,7 @@ v1 stays local, with read-only Moodle access and explicitly requested local pers
 - Access-denied and account-switching tests prevent cross-course/account leakage. Test prompt-injection content as untrusted data. Keep diagnostics free of passwords, cookies, service tickets, and private document text.
 - All required CI checks pass. Investigate high/critical dependency findings before release; document any justified exception. Review authentication, file handling, cache isolation, and client output independently of the implementation author.
 - Run a small opt-in live compatibility check and record only non-sensitive results. Never deliberately send wrong credentials to production services for tests.
-- Prepare a changelog, exact version/tag, installation instructions, and recovery steps. Fix the currently duplicated package/server version source before publishing. No release is automatic merely because a milestone or PR closes.
+- Prepare a changelog, exact version/tag, installation instructions, and recovery steps. Verify the MCP version matches the package version before publishing. No release is automatic merely because a milestone or PR closes.
 
 ## After v1.0
 
@@ -115,27 +115,15 @@ Use a local database/index only when persistence is introduced, with account/ins
 
 Multi-user hosting is a separate design decision, not a switch that exposes a personal .env-based browser session over HTTP. Keep the local deployment fully supported even if a hosted option is later added.
 
-## Next issue queue
+## Remaining v1 work
 
-Linked entries refer to tracked work; unlinked entries are proposed issues. Split proposed work into implementation-sized issues with acceptance criteria when its release becomes active.
+The [v1 tracker](https://github.com/mahmutmft/courses-mcp/issues/28) and [milestone](https://github.com/mahmutmft/courses-mcp/milestone/1) carry current status and acceptance criteria.
 
-| Order | Proposed issue | Target / dependency | Acceptance focus |
-| --- | --- | --- | --- |
-| 1 | Login diagnostics (#4 / PR #5) — merged | v0.1.x | Five required CI checks, review findings resolved, live positive check |
-| 2 | [Academic-year and semester filters (#8)](https://github.com/mahmutmft/courses-mcp/issues/8) — merged | v0.2 | Supported naming variants, explicit selection, no date-based enrollment inference |
-| 3 | [Separate course sections (#12)](https://github.com/mahmutmft/courses-mcp/issues/12) — merged | v0.2 | Stable IDs, deduplication, bounded traversal, partial results |
-| 4 — active | [Read supported Moodle pages and URL-resource HTML content (#16)](https://github.com/mahmutmft/courses-mcp/issues/16) | v0.2; resource IDs | Readable text/tables, source/retrieval time, safe redirects, explicit unsupported targets; no form submission |
-| 5 | Browse folders and report inaccessible/unsupported activities | v0.2; resource model | Expected nested items found; no unrestricted cross-origin fetch; visible access failures |
-| 6 | [Controlled resource retrieval and text-PDF extraction (#18)](https://github.com/mahmutmft/courses-mcp/issues/18) — active | v0.3; discovery | Access/MIME/size/time limits, page citations, unsupported scans explicit |
-| 7a — active | [Read saved Moodle choice selection and term labels (#20)](https://github.com/mahmutmft/courses-mcp/issues/20) | Scheduling track; authorized choice discovery | Explicit saved selection; conservative day/time/room/group; missing/conflicting fields remain unknown; no voting or weekly attendance inference |
-| 7b — active | [Local attendance/exemption preferences (#22)](https://github.com/mahmutmft/courses-mcp/issues/22) | Scheduling track; authorized courses | Explicit attending/exempt/unknown states, private account-local storage, no Moodle edits; no inference from poll absence |
-| 7c | Extract dated lab timetables and manage course-group preferences | Scheduling track; content readers + choice labels/preferences | Effective dates/recurrence and source/freshness; apply explicit exemptions before future obligation resolution |
-| 8 | Resolve weekly lab occurrences and scheduled/none/unknown answers | Scheduling track; structured schedules + supported exceptions | Explicit date range, group, timezone, cancellations, conflicts and stale evidence; no false negative from empty results |
-| 9 | Add a read-only lab calendar view | Scheduling track; occurrence resolver | Stable IDs, timezone-aware weeks, moved/cancelled sessions, source/freshness; no external event writes |
-| 10 | Define local cache/index isolation and lifecycle | v0.4; retrieval | Account namespaces, deletion, freshness, permission rechecks, no tracked private content |
-| 11 | Cross-course lexical search and retrieval benchmark | v0.4; extraction/index | Ranked bounded snippets with source/page references; repeatable quality measurement |
-| 12 | Upcoming deadlines and supported announcements | v0.5; metadata readers; informs schedule exceptions where supported | Correct dates, source links, missing-data handling; read-only |
-| 13 | Establish release/version/changelog workflow | Before first tagged release | One version source, reproducible install, reviewed release notes and exact tag; no automatic publication |
+| Track | Issues |
+| --- | --- |
+| Scheduling | [#33](https://github.com/mahmutmft/courses-mcp/issues/33) complete exception handling, [#34](https://github.com/mahmutmft/courses-mcp/issues/34) weekly answers, [#35](https://github.com/mahmutmft/courses-mcp/issues/35) calendar, [#63](https://github.com/mahmutmft/courses-mcp/issues/63) saved schedules, [#36](https://github.com/mahmutmft/courses-mcp/issues/36) optional ICS export |
+| Retrieval | [#38](https://github.com/mahmutmft/courses-mcp/issues/38) finish cache lifecycle, [#39](https://github.com/mahmutmft/courses-mcp/issues/39) index, [#40](https://github.com/mahmutmft/courses-mcp/issues/40) search, [#41](https://github.com/mahmutmft/courses-mcp/issues/41) refresh, [#46](https://github.com/mahmutmft/courses-mcp/issues/46) benchmark |
+| Release | [#44](https://github.com/mahmutmft/courses-mcp/issues/44) finalize contracts, [#47](https://github.com/mahmutmft/courses-mcp/issues/47) audit limits, [#48](https://github.com/mahmutmft/courses-mcp/issues/48) independent review, [#49](https://github.com/mahmutmft/courses-mcp/issues/49) revalidate Windows and client setup, [#50](https://github.com/mahmutmft/courses-mcp/issues/50) apply release workflow |
 
 ## Versioning and sustained maintenance
 
