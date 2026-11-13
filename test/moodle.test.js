@@ -46,3 +46,18 @@ test('shared browser operations serialize and recover after an operation fails',
   assert.equal(await second, 3);
   assert.deepEqual(events, [1, 2]);
 });
+
+test('nonadvancing dashboard cursor reports partial enrollment coverage', async () => {
+  const moodle = new Moodle({});
+  moodle.login = async () => {};
+  moodle.page = { goto: async () => {} };
+  moodle.isAuthenticated = async () => true;
+  const offsets = [];
+  moodle.ajax = async (_, { offset }) => {
+    offsets.push(offset);
+    return { courses: [{ id: offset + 10, fullname: 'Synthetic' }], nextoffset: 1 };
+  };
+  const result = await moodle.listCourses();
+  assert.deepEqual(offsets, [0, 1]);
+  assert.equal(result.truncated, true);
+});

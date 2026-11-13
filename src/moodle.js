@@ -114,13 +114,17 @@ export class Moodle {
   async ajax(methodname, args) {
     const result = await this.page.evaluate(async ({ methodname, args }) => {
       const response = await fetch(`/lib/ajax/service.php?sesskey=${encodeURIComponent(M.cfg.sesskey)}`, {
+        signal: AbortSignal.timeout(10000),
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify([{ index: 0, methodname, args }]),
-      });
+      }).catch(error => ({ failed: error.name === 'TimeoutError' ? 'timeout' : 'network' }));
+      if (response.failed) return response;
       if (!response.ok) return { failed: true };
       const data = await response.json();
       return data[0]?.error ? { failed: true } : { data: data[0]?.data };
     }, { methodname, args });
+    if (result.failed === 'timeout') throw new UserError('The Moodle course API timed out (COURSE_API_TIMEOUT).');
+    if (result.failed === 'network') throw new UserError('The Moodle course API could not be reached (COURSE_API_NETWORK).');
     if (result.failed || !result.data) throw new UserError('The read-only Moodle course API is unavailable or this session expired. Restart the server to sign in again.');
     return result.data;
   }
@@ -136,12 +140,13 @@ export class Moodle {
       const data = await this.ajax('core_course_get_enrolled_courses_by_timeline_classification', {
         classification: 'all', limit: 100, offset, sort: 'fullname', customfieldname: '', customfieldvalue: '',
       });
-      if (!Array.isArray(data.courses)) throw new UserError('Moodle returned an unsupported course response.');
+      if (!Array.isArray(data.courses) || data.courses.length > 100) throw new UserError('Moodle returned an unsupported course response.');
       courses.push(...data.courses);
       const next = Number(data.nextoffset);
-      if (!data.courses.length || !Number.isFinite(next) || next <= offset) {
+      if (!data.courses.length || data.nextoffset == null || next === 0) {
         return { courses: normalizeCourses(courses, MOODLE), truncated: false };
       }
+      if (!Number.isSafeInteger(next) || next <= offset) break;
       offset = next;
     }
     return { courses: normalizeCourses(courses, MOODLE), truncated: true };
