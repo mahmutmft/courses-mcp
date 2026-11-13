@@ -72,3 +72,7 @@ This grammar covers individually superseded slots. Whole timetable revisions,
 free-form posts and moves into the window from outside it require further evidence.
 An unavailable or partial forum read preserves timetable candidates and reports
 partial coverage. Empty results do not establish absence.
+
+Posts that mention both labs and a supported change term in free text are
+flagged as possible changes for review, with the announcement source. The
+signal is approximate and does not establish the affected date or group.
