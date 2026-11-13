@@ -3,11 +3,11 @@ import { isOccurrenceRange } from './occurrences.ts';
 const date = '(\\d{4}-\\d{2}-\\d{2})';
 const time = '((?:[01]\\d|2[0-3]):[0-5]\\d)';
 const token = '([\\p{L}\\p{N}-]{1,16})';
-const prefix = /^(?:Lab change|Промена на лаб|Ndryshim laboratori)\s*:/iu;
+const prefix = /^(?:Lab change|Промена на лаб)\s*:/iu;
 const labMention = /\blabs?\b|лаборатор|\blaborator/iu;
-const changeMention = /\bcancell?ed\b|\b(?:rescheduled|postponed|moved|revised|updated)\b|откаж|премест|одлож|ревидиран|изменет|anulu|zhvendos|shtyr|përditës/iu;
+const changeMention = /\bcancell?ed\b|\b(?:rescheduled|postponed|moved|revised|updated)\b|откаж|премест|одлож|ревидиран|изменет/iu;
 const directive = new RegExp(
-  '^([^:]+): (cancel|move|откажано|преместено|anuluar|zhvendosur) \\| ' + token +
+  '^([^:]+): (cancel|move|откажано|преместено) \\| ' + token +
   ' \\| ' + date + ' ' + time + '(?: \\| ' + date + ' ' + time + '(?:-' + time + ')? \\| ' + token + ')?$', 'iu',
 );
 const canonical = value => value.toUpperCase().replace(/[АБЦ]/g, letter => ({ А: 'A', Б: 'B', Ц: 'C' })[letter]);
@@ -17,7 +17,7 @@ function parseChange(line) {
   const match = directive.exec(line);
   if (!match) return null;
   const [, , action, group, originalDate, originalTime, newDate, newTime, endTime, room] = match;
-  const moved = ['move', 'преместено', 'zhvendosur'].includes(action.toLowerCase());
+  const moved = ['move', 'преместено'].includes(action.toLowerCase());
   if (!validDate(originalDate) || moved !== Boolean(newDate)) return null;
   if (moved && (!validDate(newDate) || (endTime && endTime <= newTime))) return null;
   return {
