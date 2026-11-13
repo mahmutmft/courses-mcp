@@ -5,17 +5,17 @@ import { UserError } from './config.js';
 const base = 'https://courses.finki.ukim.mk';
 const clean = text => text.replace(/\s+/g, ' ').trim();
 const labels = {
-  opened: ['opened', 'opens', 'allow submissions from', 'отворено', 'се отвора', 'отворена', 'hapur', 'hapet'],
-  due: ['due', 'due date', 'рок за предавање', 'краен рок', 'датум на доспевање', 'afati', 'afati i dorëzimit'],
-  cutoff: ['cut-off date', 'cutoff date', 'краен датум за поднесување', 'afati përfundimtar'],
+  opened: ['opened', 'opens', 'allow submissions from', 'отворено', 'се отвора', 'отворена'],
+  due: ['due', 'due date', 'рок за предавање', 'краен рок', 'датум на доспевање'],
+  cutoff: ['cut-off date', 'cutoff date', 'краен датум за поднесување'],
 };
 const months = [
-  ['january', 'јануари', 'janar'], ['february', 'февруари', 'shkurt'], ['march', 'март', 'mars'],
-  ['april', 'април', 'prill'], ['may', 'мај', 'maj'], ['june', 'јуни', 'qershor'],
-  ['july', 'јули', 'korrik'], ['august', 'август', 'gusht'], ['september', 'септември', 'shtator'],
-  ['october', 'октомври', 'tetor'], ['november', 'ноември', 'nëntor'], ['december', 'декември', 'dhjetor'],
+  ['january', 'јануари'], ['february', 'февруари'], ['march', 'март'],
+  ['april', 'април'], ['may', 'мај'], ['june', 'јуни'],
+  ['july', 'јули'], ['august', 'август'], ['september', 'септември'],
+  ['october', 'октомври'], ['november', 'ноември'], ['december', 'декември'],
 ];
-const days = 'monday|tuesday|wednesday|thursday|friday|saturday|sunday|понеделник|вторник|среда|четврток|петок|сабота|недела|e hënë|e martë|e mërkurë|e enjte|e premte|e shtunë|e diel';
+const days = 'monday|tuesday|wednesday|thursday|friday|saturday|sunday|понеделник|вторник|среда|четврток|петок|сабота|недела';
 function validLocal(value) {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(value)) return false;
   const date = new Date(`${value}Z`);
@@ -50,8 +50,8 @@ export class AssignmentError extends UserError {
 }
 
 const quizLabels = {
-  opened: [...labels.opened, 'open', 'open the quiz', 'се отвора на', 'hapja'],
-  closes: ['closes', 'closed', 'close', 'close the quiz', 'се затвора', 'затворено', 'затворена', 'mbyllet', 'mbyllja'],
+  opened: [...labels.opened, 'open', 'open the quiz', 'се отвора на'],
+  closes: ['closes', 'closed', 'close', 'close the quiz', 'се затвора', 'затворено', 'затворена'],
 };
 
 class QuizError extends UserError {

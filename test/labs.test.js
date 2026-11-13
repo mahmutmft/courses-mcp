@@ -13,7 +13,7 @@ function run(resources, overrides = {}) {
 }
 
 test('links matching homework to selected term in three languages, without inventing a week', async () => {
-  for (const name of ['Домашна задача (лабораториска вежба) 1 - група Б', 'Lab homework 1 - Group B', 'Detyrë laboratori 1 - Grupi B']) {
+  for (const name of ['Домашна задача (лабораториска вежба) 1 - група Б', 'Lab homework 1 - Group B']) {
     const result = await run([activity(name), activity('Lab homework - Group A', 3)]);
     assert.equal(result.termLinkedHomework.length, 1);
     assert.equal(result.termLinkedHomework[0].name, name);

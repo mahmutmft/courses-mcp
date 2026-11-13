@@ -11,7 +11,7 @@ test('quiz metadata excludes attempts, questions, hidden rows and forms', () => 
   const result = parseQuizHtml(page(
     '<div id="intro">Read chapter 2<form>attempt secret</form><p class="que">question secret</p></div>' +
     '<div class="activity-dates"><div><strong>Се отвора:</strong> 12 ноември 2026, 14:00</div>' +
-    '<div><strong>Mbyllet:</strong><time datetime="2026-11-15T16:00+01:00">15 November</time></div>' +
+    '<div><strong>Closes:</strong><time datetime="2026-11-15T16:00+01:00">15 November</time></div>' +
     '<div hidden><strong>Closes:</strong> hidden secret</div></div><table class="quizattemptsummary">grade secret</table>'
   ), 7, 8);
   assert.equal(result.description, 'Read chapter 2');

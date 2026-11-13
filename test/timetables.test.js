@@ -19,10 +19,10 @@ test('extracts explicit group/time/effective periods from supported HTML tables 
  assert.deepEqual(entry.dates,[]);assert.equal(entry.confirmed,undefined);
 });
 
-test('MK and SQ header/day aliases normalize without inferring missing room/end/timezone',()=>{
+test('MK and EN header/day aliases normalize without inferring missing room/end/timezone',()=>{
  for(const [names,data]of[
  [['Група','Ден','Почеток','Од','До'],['Б','понеделник','10:00','01.10.2026','31.12.2026']],
- [['Grupi','Dita','Fillimi','Nga','Deri'],['B','e hënë','10:00','2026-10-01','2026-12-31']],
+ [['Group','Day','Start','From','Until'],['B','Monday','10:00','2026-10-01','2026-12-31']],
  ]){const result=extractTimetable(table([data],names));const e=result.entries[0];assert.equal(e.group,'B');assert.equal(e.weekday,'monday');assert.equal(e.endTime,null);assert.equal(e.room,null);assert.equal(e.timeZone,null);assert.equal(e.recurrence,null);assert.equal(e.status,'incomplete');assert.equal(result.status,'partial');assert.ok(e.warnings.includes('RECURRENCE_UNSPECIFIED'));}
 });
 

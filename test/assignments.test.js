@@ -30,11 +30,10 @@ test('reads only bounded intro and activity dates, excluding submissions, forms 
   assert.equal(result.dates.opened, null);
 });
 
-test('MK/EN/SQ published labels and month names map to separate date fields', () => {
+test('MK/EN published labels and month names map to separate date fields', () => {
   for (const [opened, dueLabel, cutoff, text] of [
     ['Opened', 'Due', 'Cut-off date', 'Thursday, 8 October 2026, 14:30'],
     ['Отворено', 'Рок за предавање', 'Краен датум за поднесување', 'четврток, 8 октомври 2026, 14:30'],
-    ['Hapur', 'Afati i dorëzimit', 'Afati përfundimtar', 'e enjte, 8 tetor 2026, 14:30'],
   ]) {
     const result = parseAssignmentHtml(html(row(opened, text) + row(dueLabel, text) + row(cutoff, text)), 42);
     for (const date of Object.values(result.dates)) assert.equal(date.localDateTime, '2026-10-08T14:30:00');
