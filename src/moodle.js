@@ -1,7 +1,8 @@
+import { collectDeadlines } from './deadlines.js';
 import { chromium } from 'playwright';
 import { UserError, isCasLogin } from './config.js';
 import { normalizeCourses } from './content.js';
-import { collectCourseSections, readCoursePage } from './sections.js';
+import { collectCourseSections, readCoursePage, traversalLimits } from './sections.js';
 import { readResourceContent } from './resources.js';
 import { readChoiceSelection } from './choices.js';
 import { LabPreferences } from './preferences.js';
@@ -150,7 +151,11 @@ export class Moodle {
     // Only enrolled courses are exposed, even if a caller knows another ID.
     const { courses } = await this.listCourses();
     if (!courses.some(course => course.id === id)) throw new UserError('Course is not in your enrolled course list.');
-    return collectCourseSections({ courseId: id, baseUrl: MOODLE,
+    return this.#discoverCourse(id);
+  }
+
+  #discoverCourse(id, milliseconds = traversalLimits.milliseconds) {
+    return collectCourseSections({ courseId: id, baseUrl: MOODLE, limits: { ...traversalLimits, milliseconds },
       readPage: (url, timeout) => readCoursePage(this.page.context().request, url, id, MOODLE, timeout) });
   }
 
@@ -161,6 +166,19 @@ export class Moodle {
 
   async getLabTimetable(courseId, resourceId) {
     return extractTimetable(await this.readResource(courseId, resourceId));
+  }
+
+  async getCourseworkDeadlines(courseIds, range) {
+    const { courses } = await this.listCourses();
+    const enrolled = new Set(courses.map(course => course.id));
+    if (courseIds.some(id => !enrolled.has(id))) throw new UserError('A selected course is not in your enrolled course list.');
+    const request = this.page.context().request;
+    return collectDeadlines({
+      courseIds, range, discover: (id, timeout) => this.#discoverCourse(id, timeout),
+      read: ({ course, kind, activityId }, timeout) => kind === 'quiz'
+        ? readQuiz({ request, course, quizId: activityId, timeout })
+        : readAssignment({ request, course, assignmentId: activityId, timeout }),
+    });
   }
 
   async getQuiz(courseId, quizId) {
