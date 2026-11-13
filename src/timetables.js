@@ -2,18 +2,18 @@ import { createHash } from 'node:crypto';
 
 const normalize = value => String(value ?? '').normalize('NFKC').trim().toLowerCase().replace(/:$/, '').trim();
 const aliases = {
-  group: ['group','група','grupi'], weekday:['day','weekday','ден','dita'],
-  startTime:['start','start time','почеток','fillimi'], endTime:['end','end time','крај','mbarimi'],
-  time:['time','час','време','ora'], room:['room','lab','просторија','лабораторија','salla'],
-  dates:['date','dates','датум','датуми','data','datat'],
-  effectiveFrom:['from','valid from','од','важи од','nga'], effectiveUntil:['until','valid until','до','важи до','deri'],
-  timeZone:['timezone','time zone','временска зона','zona kohore'],
-  recurrence:['recurrence','повторување','përsëritja'], anchorDate:['anchor','anchor date','почетна недела','data bazë'],
+  group: ['group','група'], weekday:['day','weekday','ден'],
+  startTime:['start','start time','почеток'], endTime:['end','end time','крај'],
+  time:['time','час','време'], room:['room','lab','просторија','лабораторија'],
+  dates:['date','dates','датум','датуми'],
+  effectiveFrom:['from','valid from','од','важи од'], effectiveUntil:['until','valid until','до','важи до'],
+  timeZone:['timezone','time zone','временска зона'],
+  recurrence:['recurrence','повторување'], anchorDate:['anchor','anchor date','почетна недела'],
 };
 const fieldFor = value => Object.keys(aliases).find(key => aliases[key].includes(normalize(value)));
 const days = [
- ['monday','понеделник','e hënë'],['tuesday','вторник','e martë'],['wednesday','среда','e mërkurë'],
- ['thursday','четврток','e enjte'],['friday','петок','e premte'],['saturday','сабота','e shtunë'],['sunday','недела','e diel'],
+ ['monday','понеделник'],['tuesday','вторник'],['wednesday','среда'],
+ ['thursday','четврток'],['friday','петок'],['saturday','сабота'],['sunday','недела'],
 ];
 function date(value) {
   let candidate = value.trim();
@@ -76,7 +76,7 @@ function entryFromFields(fields, source, courseId) {
     if (!entry.timeZone) warnings.push('UNRESOLVED_TIMEZONE');
   }
   if (has('recurrence')) {
-    const rules={weekly:'weekly','неделно':'weekly','çdo javë':'weekly',alternating:'alternating','секоја втора недела':'alternating','çdo dy javë':'alternating'};
+    const rules={weekly:'weekly','неделно':'weekly',alternating:'alternating','секоја втора недела':'alternating'};
     entry.recurrence=rules[normalize(fields.recurrence)]??null;
     if (!entry.recurrence) warnings.push('UNRESOLVED_RECURRENCE');
   }

@@ -7,10 +7,10 @@ export function isMonday(value) {
   const date = new Date(`${value}T00:00:00Z`);
   return Number.isFinite(+date) && date.toISOString().slice(0, 10) === value && date.getUTCDay() === 1;
 }
-const labWords = /лаборатор|домашн|laborator|homework|presentation|презентир|detyr[ëe]/iu;
+const labWords = /лаборатор|домашн|laborator|homework|presentation|презентир/iu;
 const type = resource => resource.url?.match(/\/mod\/([a-z]+)\/view\.php/)?.[1];
 const group = text => {
-  const values = [...text.matchAll(/(?:група|group|grupi)\s*[:\-]?\s*([ABАБ])(?![\p{L}\p{N}])/giu)]
+  const values = [...text.matchAll(/(?:група|group)\s*[:\-]?\s*([ABАБ])(?![\p{L}\p{N}])/giu)]
     .map(match => ({ А: 'A', Б: 'B' }[match[1].toUpperCase()] || match[1].toUpperCase()));
   return { value: new Set(values).size === 1 ? values[0] : null, ambiguous: new Set(values).size > 1 };
 };
@@ -49,7 +49,7 @@ export async function buildLabSchedule({ course, preference, manualTerm, weekSta
   const selected = resolution.term;
   for (const resource of resources) {
     if (!['assign', 'quiz'].includes(type(resource)) || !labWords.test(`${resource.sectionName} ${resource.name}`)) continue;
-    if (/откаж|премест|cancel|reschedul|anulu|shtyr/iu.test(resource.name)) {
+    if (/откаж|премест|cancel|reschedul/iu.test(resource.name)) {
       result.warnings.push('ACTIVITY_EXCEPTION_REQUIRES_REVIEW'); continue;
     }
     const activityGroup = group(resource.name);

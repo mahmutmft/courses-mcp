@@ -4,7 +4,7 @@ get_lab_timetable(courseId, resourceId) reads one currently discovered supported
 
 ## Supported layouts
 
-HTML tables must have one header row and only recognized, unique column names. English/Macedonian/Albanian aliases are supported for Group/Група/Grupi, Day/Ден/Dita, Time/Час/Ora, Start/Почеток/Fillimi, End/Крај/Mbarimi, Room/Просторија/Salla, Dates/Датуми/Datat, From/Од/Nga, Until/До/Deri, Timezone/Временска зона/Zona kohore, Recurrence/Повторување/Përsëritja and Anchor/Почетна недела/Data bazë. See src/timetables.js for the exact alias list. Merged cells, nested tables, unknown headers (including student names/indices), duplicate headers and mismatched cell counts are rejected with coverage warnings. Values are never inherited from neighboring rows or tables.
+HTML tables must have one header row and only recognized, unique column names. English and Macedonian aliases are supported for Group/Група, Day/Ден, Time/Час, Start/Почеток, End/Крај, Room/Просторија, Dates/Датуми, From/Од, Until/До, Timezone/Временска зона, Recurrence/Повторување and Anchor/Почетна недела. See src/timetables.js for the exact alias list. Merged cells, nested tables, unknown headers (including student names/indices), duplicate headers and mismatched cell counts are rejected with coverage warnings. Values are never inherited from neighboring rows or tables.
 
 Text-PDF and plain HTML text support **one record per line**, using explicit key:value fields separated by pipes. Fields must all have recognized, unique labels. No table reconstruction from whitespace, unlabelled PDF columns, multi-line inheritance, scanned-page OCR, natural-language announcement interpretation or implicit faculty timezone is attempted.
 
@@ -20,7 +20,7 @@ Synthetic example of a bounded weekly rule:
 Group: B | Day: Monday | Start: 10:00 | End: 11:30 | Room: 123 | From: 2026-10-01 | Until: 2026-12-31 | Timezone: Europe/Skopje | Recurrence: weekly
 ~~~
 
-Dates accept calendar-valid YYYY-MM-DD or D.M.YYYY with all components present. Date lists use commas/semicolons (at most 32 dates per record); ranges are represented by separate From/Until fields, not guessed from shorthand. Times use 24-hour HH:mm with optional dash-separated end time. End time must follow start time within the same day; overnight/ambiguous/AM-PM layouts remain unresolved. Weekdays use exact supported MK/EN/SQ names. Room/group are bounded tokens; supported Cyrillic equivalents normalize consistently with private term preferences. Timezone must be an explicitly supplied supported IANA-style name or UTC; abbreviations such as CET are unresolved. No dates or teaching periods are inferred from the current date, publication time or semester name.
+Dates accept calendar-valid YYYY-MM-DD or D.M.YYYY with all components present. Date lists use commas/semicolons (at most 32 dates per record); ranges are represented by separate From/Until fields, not guessed from shorthand. Times use 24-hour HH:mm with optional dash-separated end time. End time must follow start time within the same day; overnight/ambiguous/AM-PM layouts remain unresolved. Weekdays use exact supported MK/EN names. Room/group are bounded tokens; supported Cyrillic equivalents normalize consistently with private term preferences. Timezone must be an explicitly supplied supported IANA-style name or UTC; abbreviations such as CET are unresolved. No dates or teaching periods are inferred from the current date, publication time or semester name.
 
 ## Output and uncertainty
 
@@ -32,7 +32,7 @@ Weekly and alternating rules are recorded only when explicit. Alternating rules 
 
 ## Bounds and testing
 
-Existing HTML/PDF reader limits apply first. The extractor inspects at most 10 tables, 100 data rows per table, 30 PDF pages, 60k text characters and 1,000 text lines per block; it retains at most 200 unique entries and inspects at most 1,000 candidate records. Output warnings identify limits rather than implying complete source coverage. Parsing is deterministic, bounded and uses no model/provider dependency. Supported extraction is tested with synthetic MK/EN/SQ tables, selected dates, bounded/alternating rules, overlapping versions, missing/invalid fields, merged cells, roster/injection-shaped data, partial/image-only sources and a real PDF-worker pipeline fixture. No private faculty schedules are committed.
+Existing HTML/PDF reader limits apply first. The extractor inspects at most 10 tables, 100 data rows per table, 30 PDF pages, 60k text characters and 1,000 text lines per block; it retains at most 200 unique entries and inspects at most 1,000 candidate records. Output warnings identify limits rather than implying complete source coverage. Parsing is deterministic, bounded and uses no model/provider dependency. Supported extraction is tested with synthetic MK/EN tables, selected dates, bounded/alternating rules, overlapping versions, missing/invalid fields, merged cells, roster/injection-shaped data, partial/image-only sources and a real PDF-worker pipeline fixture. No private faculty schedules are committed.
 
 Restart the MCP connection after updating to discover the new read-only tool. Faculty documents with unsupported layouts can still be read through read_resource; this extractor reports its narrower supported grammar explicitly.
 
@@ -63,7 +63,7 @@ Lab change: cancel | A | 2026-11-10 14:00
 Lab change: move | A | 2026-11-10 14:00 | 2026-11-12 15:00-16:00 | 200ab
 ~~~
 
-Macedonian and Albanian prefixes/actions are also accepted. Match the original
+Macedonian prefixes and actions are also accepted. Match the original
 group, local date and start time uniquely. The replacement inherits the source
 timezone and original ID, and may extend beyond the requested range. Omitted
 replacement end times remain unknown. Identical changes preserve all citations.
