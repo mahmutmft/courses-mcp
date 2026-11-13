@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
+import packageInfo from '../package.json' with { type: 'json' };
+
 test('stdio initializes, lists read-only tools, and validates inputs without signing in', async () => {
   const transport = new StdioClientTransport({ command: process.execPath,
     args: [fileURLToPath(new URL('../src/index.js', import.meta.url))],
@@ -15,6 +17,7 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
   transport.stderr?.on('data', chunk => { stderr += chunk; });
   try {
     await client.connect(transport);
+    assert.equal(client.getServerVersion()?.version, packageInfo.version);
     const { tools } = await client.listTools();
     assert.deepEqual(tools.map(tool => tool.name).sort(), ['get_announcements', 'get_assignment', 'get_choice_selection', 'get_course', 'get_coursework_deadlines', 'get_folder', 'get_lab_preference', 'get_lab_schedule', 'get_lab_term_preference', 'get_lab_timetable', 'get_quiz', 'list_courses', 'read_folder_file', 'read_resource', 'search_course', 'set_lab_preference', 'set_lab_term_preference']);
     for (const weekStart of ['2026-02-30', '2026-11-03', 'current']) {
