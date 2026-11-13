@@ -4,7 +4,7 @@ Local MCP server for finding material in your authorized courses at https://cour
 
 See the [versioned roadmap](docs/ROADMAP.md) for the v1.0 goal, planned releases, and contribution priorities. Roadmap features are proposals until shipped.
 
-Supported linked Moodle HTML can be read on demand with read_resource. Next planned: evidence-backed weekly lab checks and a read-only calendar, distinguishing a confirmed session, confirmed no occurrence, and insufficient information. Scheduling/calendar capabilities are not implemented yet; see the roadmap's priority workflow.
+The server reads supported Moodle HTML, text PDFs, folders and published coursework dates. Lab tools extract and expand supported timetable evidence. The roadmap tracks weekly answers across courses and the read-only calendar. See [MCP tool contracts](docs/MCP-CONTRACTS.md) for the current tool list.
 
 ## Setup
 
