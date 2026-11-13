@@ -20,6 +20,14 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
     assert.equal(client.getServerVersion()?.version, packageInfo.version);
     const { tools } = await client.listTools();
     assert.deepEqual(tools.map(tool => tool.name).sort(), ['get_announcements', 'get_assignment', 'get_choice_selection', 'get_course', 'get_coursework_deadlines', 'get_folder', 'get_lab_preference', 'get_lab_schedule', 'get_lab_term_preference', 'get_lab_timetable', 'get_quiz', 'list_courses', 'read_folder_file', 'read_resource', 'search_course', 'set_lab_preference', 'set_lab_term_preference']);
+    for (const arguments_ of [
+      { courseIds: Array.from({ length: 11 }, (_, i) => i + 1), range: { from: '2026-11-01', through: '2026-11-02' } },
+      { courseIds: [42], range: { from: '2026-11-01', through: '2026-12-02' } },
+    ]) {
+      const rejected = await client.callTool({ name: 'get_coursework_deadlines', arguments: arguments_ });
+      assert.equal(rejected.isError, true);
+      assert.doesNotMatch(rejected.content[0].text, /Fill MOODLE_USERNAME/);
+    }
     for (const weekStart of ['2026-02-30', '2026-11-03', 'current']) {
       const invalidWeek = await client.callTool({ name: 'get_lab_schedule', arguments: { courseId: 42, weekStart } });
       assert.equal(invalidWeek.isError, true);
