@@ -4,6 +4,8 @@ const date = '(\\d{4}-\\d{2}-\\d{2})';
 const time = '((?:[01]\\d|2[0-3]):[0-5]\\d)';
 const token = '([\\p{L}\\p{N}-]{1,16})';
 const prefix = /^(?:Lab change|Промена на лаб|Ndryshim laboratori)\s*:/iu;
+const labMention = /\blabs?\b|лаборатор|\blaborator/iu;
+const changeMention = /\bcancell?ed\b|\b(?:rescheduled|postponed|moved|revised|updated)\b|откаж|премест|одлож|ревидиран|изменет|anulu|zhvendos|shtyr|përditës/iu;
 const directive = new RegExp(
   '^([^:]+): (cancel|move|откажано|преместено|anuluar|zhvendosur) \\| ' + token +
   ' \\| ' + date + ' ' + time + '(?: \\| ' + date + ' ' + time + '(?:-' + time + ')? \\| ' + token + ')?$', 'iu',
@@ -28,10 +30,15 @@ export function resolveLabChanges(expansion, announcements) {
   const changes = [];
   const unresolved = [];
   for (const post of announcements?.posts ?? []) {
-    for (const line of post.text.split('\n')) {
+    const evidence = { sourceUrl: post.sourceUrl, publishedAt: post.publishedAt, updatedAt: post.updatedAt, checkedAt: post.checkedAt };
+    const lines = post.text.split('\n');
+    const prose = [post.title ?? '', ...lines.filter(line => !prefix.test(line))].join(' ');
+    if (labMention.test(prose) && changeMention.test(prose)) {
+      unresolved.push({ reason: 'POSSIBLE_UNSTRUCTURED_LAB_CHANGE', evidence });
+    }
+    for (const line of lines) {
       if (!prefix.test(line)) continue;
       const change = parseChange(line);
-      const evidence = { sourceUrl: post.sourceUrl, publishedAt: post.publishedAt, updatedAt: post.updatedAt, checkedAt: post.checkedAt };
       if (change && (change.originalDate < expansion.range.from || change.originalDate > expansion.range.through)) continue;
       if (!change || !post.publishedAt || post.warnings.length) {
         unresolved.push({ reason: 'UNRESOLVED_ANNOUNCEMENT', evidence });

@@ -42,3 +42,17 @@ test('failed or incomplete refresh preserves candidates with partial status', ()
   assert.equal(malformed.status, 'partial');
   assert.equal(malformed.sessions[0].status, 'timetable');
 });
+
+test('unstructured lab changes retain evidence without altering timetable candidates', () => {
+  const result = resolveLabChanges(expansion, forum(
+    'Laboratory exercises were moved to Thursday.',
+    'Лабораториските се одложени.',
+    'Laboratori është anuluar.',
+    'The project deadline was moved.',
+  ));
+  assert.equal(result.status, 'partial');
+  assert.deepEqual(result.sessions.map(item => item.status), ['timetable', 'timetable']);
+  assert.equal(result.unresolved.length, 3);
+  assert.equal(result.unresolved[0].reason, 'POSSIBLE_UNSTRUCTURED_LAB_CHANGE');
+  assert.equal(result.unresolved[0].evidence.sourceUrl, 'https://example.test/post/0');
+});
