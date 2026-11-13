@@ -113,16 +113,38 @@ export class Moodle {
 
   async ajax(methodname, args) {
     const result = await this.page.evaluate(async ({ methodname, args }) => {
-      const response = await fetch(`/lib/ajax/service.php?sesskey=${encodeURIComponent(M.cfg.sesskey)}`, {
-        signal: AbortSignal.timeout(10000),
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify([{ index: 0, methodname, args }]),
-      }).catch(error => ({ failed: error.name === 'TimeoutError' ? 'timeout' : 'network' }));
-      if (response.failed) return response;
-      if (!response.ok) return { failed: true };
-      const data = await response.json();
+      const signal = AbortSignal.timeout(10000);
+      const maxBytes = 2 * 1024 * 1024;
+      let text = '';
+      try {
+        const response = await fetch(`/lib/ajax/service.php?sesskey=${encodeURIComponent(M.cfg.sesskey)}`, {
+          signal, redirect: 'error',
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify([{ index: 0, methodname, args }]),
+        });
+        if (!response.ok || !response.body) {
+          await response.body?.cancel();
+          return { failed: true };
+        }
+        const decoder = new TextDecoder();
+        let bytes = 0;
+        for await (const chunk of response.body) {
+          bytes += chunk.byteLength;
+          if (bytes > maxBytes) return { failed: 'size' };
+          text += decoder.decode(chunk, { stream: true });
+        }
+        text += decoder.decode();
+      } catch {
+        return { failed: signal.aborted ? 'timeout' : 'network' };
+      }
+      let data;
+      try { data = JSON.parse(text); }
+      catch { return { failed: 'format' }; }
+      if (!Array.isArray(data)) return { failed: 'format' };
       return data[0]?.error ? { failed: true } : { data: data[0]?.data };
     }, { methodname, args });
+    if (result.failed === 'size') throw new UserError('The Moodle course API response exceeded 2 MiB (COURSE_API_SIZE_LIMIT).');
+    if (result.failed === 'format') throw new UserError('The Moodle course API returned an unsupported response (COURSE_API_FORMAT).');
     if (result.failed === 'timeout') throw new UserError('The Moodle course API timed out (COURSE_API_TIMEOUT).');
     if (result.failed === 'network') throw new UserError('The Moodle course API could not be reached (COURSE_API_NETWORK).');
     if (result.failed || !result.data) throw new UserError('The read-only Moodle course API is unavailable or this session expired. Restart the server to sign in again.');
