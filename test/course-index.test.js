@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildCourseIndex } from '../src/course-index.js';
+import { buildCourseIndex, rankCourseIndexes } from '../src/course-index.js';
 
 const course = { id: 42, url: '/course/view.php?id=42', sections: [
   { name: 'Недела', resources: [] }, { name: 'Second week', resources: [] },
@@ -25,4 +25,17 @@ test('index reports deterministic chunk limits', () => {
   const index = buildCourseIndex(course, [{ ...pdf, pages: [{ pageNumber: 1, text: 'lab '.repeat(50_000) }] }]);
   assert.equal(index.chunks.length, 96);
   assert.ok(index.warnings.includes('INDEX_CHUNK_LIMIT'));
+});
+
+test('ranking normalizes case and composed Unicode and returns bounded cited hits', () => {
+  const index = buildCourseIndex(course, [{ ...pdf, pages: [
+    { pageNumber: 1, text: 'café' },
+    { pageNumber: 2, text: 'CAFÉ распоред' },
+  ] }]);
+  const [hit] = rankCourseIndexes([index], 'CAFÉ РАСПОРЕД', 1);
+  assert.equal(hit.score, 2);
+  assert.equal(hit.page, 2);
+  assert.equal(hit.url, pdf.sourceUrl);
+  assert.equal(hit.checkedAt, pdf.checkedAt);
+  assert.deepEqual(rankCourseIndexes([index], 'missing', 10), []);
 });

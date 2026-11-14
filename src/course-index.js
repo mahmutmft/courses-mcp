@@ -59,3 +59,15 @@ export function buildCourseIndex(course, resources) {
   if (resources.length > maxSources) warnings.add('INDEX_SOURCE_LIMIT');
   return { version: 1, courseId: course.id, sources, chunks, warnings: [...warnings] };
 }
+
+export function rankCourseIndexes(indexes, query, limit) {
+  const terms = [...new Set(tokenize(query))];
+  if (!terms.length) return [];
+  return indexes.flatMap(index => index.chunks.map(({ tokens, ...chunk }) => ({
+    ...chunk, courseId: index.courseId, indexVersion: index.version,
+    checkedAt: index.sources.find(source => source.url === chunk.url)?.checkedAt ?? null,
+    score: terms.filter(term => tokens.includes(term)).length,
+  }))).filter(hit => hit.score > 0)
+    .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id))
+    .slice(0, limit);
+}

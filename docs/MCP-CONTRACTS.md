@@ -7,6 +7,7 @@ The server uses stdio. Restart the client connection after updating the checkout
 | list_courses | Optional academicYear and semester (winter or summer) | Enrolled courses, label classification and truncation |
 | get_course | courseId | Sections, discovered resources and traversal coverage |
 | search_course | courseId, query, optional limit | Matches in visible section and activity text |
+| search_courses | courseIds (1–4), query, optional limit (1–30), optional documents (up to 3 courseId/resourceId pairs) | Ranked live index snippets with source/page citations and per-course coverage |
 | read_resource | courseId, resourceId | Supported HTML or page-cited PDF text |
 | get_folder | courseId, folderId | Discovered folder contents and coverage |
 | read_folder_file | courseId, folderId, fileId | Text of one discovered folder PDF |
