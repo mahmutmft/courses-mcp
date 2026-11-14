@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { mkdtemp, rm, writeFile, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { CourseCache } from '../src/course-cache.js';
 
 test('cache is opt-in, account scoped and rechecks access on every read', async t => {
@@ -46,7 +46,7 @@ test('cache refuses busy writes, corrupted records and linked directories', asyn
   const input = { content: 'example', index: '' };
   await store.set(1, input);
   const path = store.location(1);
-  await writeFile(path + '.lock', '');
+  await writeFile(join(dirname(path), '.account.lock'), '');
   await assert.rejects(store.set(1, input), /PREFERENCE_BUSY/);
   assert.equal((await store.get(1)).content, input.content);
   await writeFile(path, '{"schemaVersion":99}');
@@ -54,4 +54,20 @@ test('cache refuses busy writes, corrupted records and linked directories', asyn
   const alias = join(temp, 'alias');
   await symlink(options.root, alias, 'junction');
   await assert.rejects(new CourseCache(config, { ...options, root: alias }).get(1), /UNSAFE_STORAGE_DIRECTORY/);
+});
+
+test('account quota allows replacements and reuses a slot after deletion', async t => {
+  const temp = await mkdtemp(join(tmpdir(), 'finki-cache-'));
+  t.after(() => rm(temp, { recursive: true }));
+  const store = new CourseCache({ baseUrl: 'https://courses.finki.ukim.mk', username: 'fixture' }, {
+    root: join(temp, 'cache'), enabled: true, authorize: async () => true,
+  });
+  const record = { content: 'text', index: '' };
+  for (let id = 1; id <= 32; id++) await store.set(id, record);
+  await assert.rejects(store.set(33, record), /CACHE_ACCOUNT_LIMIT/);
+  await store.set(1, { ...record, content: 'updated' });
+  assert.equal((await store.get(1)).content, 'updated');
+  await store.delete(2);
+  await store.set(33, record);
+  assert.equal((await store.get(33)).content, 'text');
 });

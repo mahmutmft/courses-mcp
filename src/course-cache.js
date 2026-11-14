@@ -1,8 +1,10 @@
+import { opendir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { LabPreferences, defaultPreferenceRoot } from './preferences.js';
 import { UserError } from './config.js';
 
 const maxBytes = 1024 * 1024;
+const maxCourses = 32;
 const maxAgeMs = 7 * 86_400_000;
 
 // The existing storage implementation provides account isolation, file locks and atomic replacement.
@@ -51,7 +53,17 @@ export class CourseCache extends LabPreferences {
 
   async set(courseId, { content, index }) {
     if (!await this.#canAccess(courseId)) return null;
-    return this.update(courseId, () => ({ schemaVersion: 1, updatedAt: this.now(), content, index }));
+    return this.update(courseId, async (current, file) => {
+      if (!current) {
+        let count = 0;
+        for await (const entry of await opendir(dirname(file))) {
+          if (/^[1-9]\d*\.json$/.test(entry.name) && ++count >= maxCourses) {
+            throw new UserError('Course cache is full (CACHE_ACCOUNT_LIMIT). Delete a cached course before adding another.');
+          }
+        }
+      }
+      return { schemaVersion: 1, updatedAt: this.now(), content, index };
+    }, { accountLock: true });
   }
 
   async inspect(courseId) {
@@ -64,6 +76,6 @@ export class CourseCache extends LabPreferences {
 
   async delete(courseId) {
     if (!await this.#canAccess(courseId)) return null;
-    await this.update(courseId, () => null);
+    await this.update(courseId, () => null, { accountLock: true });
   }
 }

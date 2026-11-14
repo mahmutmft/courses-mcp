@@ -83,7 +83,7 @@ export class LabPreferences {
     return describe(courseId, record);
   }
 
-  async update(courseId, transform) {
+  async update(courseId, transform, { accountLock = false } = {}) {
     let lock;
     let acquiredLockPath;
     let temp;
@@ -91,12 +91,12 @@ export class LabPreferences {
     try {
       const file = this.location(courseId);
       await this.checkDirectories(file, true);
-      const lockPath = `${file}.lock`;
+      const lockPath = accountLock ? join(dirname(file), '.account.lock') : `${file}.lock`;
       try { lock = await open(lockPath, 'wx', 0o600); }
       catch (error) { if (error.code === 'EEXIST') throw new PreferenceError('PREFERENCE_BUSY'); throw error; }
       acquiredLockPath = lockPath;
       const current = await this.load(file);
-      const record = transform(current);
+      const record = await transform(current, file);
       if (record === null) {
         if (current) await unlink(file);
         return null;
@@ -113,7 +113,7 @@ export class LabPreferences {
       await rename(temp, file);
       temp = undefined;
       return record;
-    } catch (error) { if (error instanceof PreferenceError) throw error; throw new PreferenceError('PREFERENCE_WRITE_FAILED'); }
+    } catch (error) { if (error instanceof UserError) throw error; throw new PreferenceError('PREFERENCE_WRITE_FAILED'); }
     finally {
       await handle?.close().catch(() => {});
       if (temp) await unlink(temp).catch(() => {});

@@ -19,3 +19,8 @@ Inspect returns size and timestamp. Delete removes the content and index togethe
 Both are internal operations. After Moodle access is revoked, the account owner can stop the server and remove the local record manually. Stop the server before manually recovering stale
 locks or removing malformed files. Future schema changes require an explicit
 migration or deletion and rebuild.
+
+Each account can keep up to 32 course records of at most 1 MiB each. Expired
+records still occupy a slot until deleted. Replacing an existing record does
+not use another slot. Cache writes and deletions share an exclusive account
+lock so concurrent writers cannot reserve the same remaining slot.
