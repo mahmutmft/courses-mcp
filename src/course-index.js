@@ -23,15 +23,30 @@ export function buildCourseIndex(course, resources) {
     seen.add(source.url);
     sources.push(source);
     for (const { text, page } of blocks) {
-      const characters = Array.from(text.slice(0, maxChunks * chunkSize * 2));
-      if (characters.join('').length < text.length) warnings.add('INDEX_TEXT_LIMIT');
-      for (let offset = 0; offset < characters.length; offset += chunkSize) {
+      const boundedText = text.slice(0, maxChunks * chunkSize * 2);
+      const characters = Array.from(boundedText);
+      if (boundedText.length < text.length) warnings.add('INDEX_TEXT_LIMIT');
+      let end = 0;
+      const wordCharacter = /[\p{L}\p{M}\p{N}]/u;
+      for (let offset = 0; offset < characters.length; offset = end) {
         if (chunks.length === maxChunks) {
           warnings.add('INDEX_CHUNK_LIMIT');
           return;
         }
-        const excerpt = characters.slice(offset, offset + chunkSize).join('');
-        const tokens = [...new Set(tokenize(excerpt))];
+        end = Math.min(offset + chunkSize, characters.length);
+        const splitsWord = index => wordCharacter.test(characters[index - 1] ?? '') &&
+          wordCharacter.test(characters[index] ?? '');
+        while (end > offset && splitsWord(end)) end--;
+        if (end === offset) {
+          // Skip an oversized token entirely rather than indexing its fragments.
+          while (end < characters.length && wordCharacter.test(characters[end])) end++;
+          warnings.add('INDEX_TOKEN_LIMIT');
+          continue;
+        }
+        const excerpt = characters.slice(offset, end).join('');
+        const completeText = end === characters.length && boundedText.length < text.length && wordCharacter.test(characters[end - 1])
+          ? excerpt.replace(/[\p{L}\p{M}\p{N}]+$/u, '') : excerpt;
+        const tokens = [...new Set(tokenize(completeText))];
         if (!tokens.length) continue;
         const id = createHash('sha256').update(JSON.stringify([course.id, source.url, page, offset])).digest('hex');
         chunks.push({ id, url: source.url, page, excerpt, tokens });
