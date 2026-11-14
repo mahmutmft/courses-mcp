@@ -39,3 +39,19 @@ test('ranking normalizes case and composed Unicode and returns bounded cited hit
   assert.equal(hit.checkedAt, pdf.checkedAt);
   assert.deepEqual(rankCourseIndexes([index], 'missing', 10), []);
 });
+
+test('words crossing a chunk boundary remain searchable without fragment hits', () => {
+  const index = buildCourseIndex(course, [{ ...pdf, pages: [{
+    pageNumber: 2, text: 'x '.repeat(498) + 'распоред for Thursday',
+  }] }]);
+  assert.equal(rankCourseIndexes([index], 'распоред', 1)[0].page, 2);
+  assert.deepEqual(rankCourseIndexes([index], 'расп', 10), []);
+});
+
+test('an oversized token is skipped and subsequent words remain searchable', () => {
+  const index = buildCourseIndex(course, [{ ...pdf, pages: [{
+    pageNumber: 2, text: 'a'.repeat(1600) + ' deadline',
+  }] }]);
+  assert.ok(index.warnings.includes('INDEX_TOKEN_LIMIT'));
+  assert.equal(rankCourseIndexes([index], 'deadline', 1)[0].page, 2);
+});
