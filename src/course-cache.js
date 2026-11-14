@@ -11,7 +11,19 @@ export class CourseCache extends LabPreferences {
     now, authorize } = {}) {
     super(config, { root, now });
     this.enabled = enabled;
-    this.authorize = authorize;
+    this.#authorize = authorize;
+    this.config = Object.freeze({ baseUrl: config.baseUrl, username: config.username });
+  }
+
+  #authorize;
+
+  async #canAccess(courseId) {
+    if (!this.enabled || !Number.isSafeInteger(courseId) || courseId < 1) return false;
+    try {
+      return await this.#authorize?.(courseId) === true;
+    } catch {
+      throw new UserError('Course cache access could not be verified (CACHE_AUTHORIZATION_UNAVAILABLE).');
+    }
   }
 
   async load(file) {
@@ -28,7 +40,7 @@ export class CourseCache extends LabPreferences {
   }
 
   async get(courseId) {
-    if (!this.enabled || !await this.authorize?.(courseId)) return null;
+    if (!await this.#canAccess(courseId)) return null;
     const file = this.location(courseId);
     await this.checkDirectories(file);
     const record = await this.load(file);
@@ -38,11 +50,12 @@ export class CourseCache extends LabPreferences {
   }
 
   async set(courseId, { content, index }) {
-    if (!this.enabled || !await this.authorize?.(courseId)) return null;
+    if (!await this.#canAccess(courseId)) return null;
     return this.update(courseId, () => ({ schemaVersion: 1, updatedAt: this.now(), content, index }));
   }
 
   async inspect(courseId) {
+    if (!await this.#canAccess(courseId)) return null;
     const file = this.location(courseId);
     await this.checkDirectories(file);
     const record = await this.load(file);
@@ -50,6 +63,7 @@ export class CourseCache extends LabPreferences {
   }
 
   async delete(courseId) {
+    if (!await this.#canAccess(courseId)) return null;
     await this.update(courseId, () => null);
   }
 }
