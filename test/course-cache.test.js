@@ -21,8 +21,16 @@ test('cache is opt-in, account scoped and rechecks access on every read', async 
   assert.equal(await new CourseCache({ ...config, username: 'different' }, options).get(1), null);
   allowed = false;
   assert.equal(await store.get(1), null);
-  assert.deepEqual(Object.keys(await store.inspect(1)), ['updatedAt', 'bytes']);
+  assert.equal(await store.inspect(1), null);
+  assert.equal(await store.set(1, { content: 'replacement', index: '' }), null);
+  await store.delete(1);
+  const offline = new CourseCache(config, { ...options, authorize: async () => { throw new Error('private detail'); } });
+  for (const operation of [() => offline.get(1), () => offline.set(1, input), () => offline.inspect(1), () => offline.delete(1)]) {
+    await assert.rejects(operation, { message: 'Course cache access could not be verified (CACHE_AUTHORIZATION_UNAVAILABLE).' });
+  }
   allowed = true;
+  assert.equal((await store.get(1)).content, input.content);
+  assert.deepEqual(Object.keys(await store.inspect(1)), ['updatedAt', 'bytes']);
   now = '2026-11-08T00:00:00.000Z';
   assert.equal(await store.get(1), null);
   await store.delete(1);
