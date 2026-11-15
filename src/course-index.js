@@ -90,3 +90,32 @@ export function rankCourseIndexes(indexes, query, limit) {
     .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id))
     .slice(0, limit);
 }
+
+/** Decode an index only after its cache record has passed current access checks. */
+export function decodeCourseIndex(serialized, courseId) {
+  if (typeof serialized !== 'string' || Buffer.byteLength(serialized) > 1024 * 1024) return null;
+  let index;
+  try { index = JSON.parse(serialized); } catch { return null; }
+  if (index?.version !== 1 || index.courseId !== courseId ||
+      !Array.isArray(index.sources) || index.sources.length > maxSources ||
+      !Array.isArray(index.chunks) || index.chunks.length > maxChunks ||
+      !Array.isArray(index.warnings) || !index.warnings.every(value => typeof value === 'string')) return null;
+
+  const urls = new Set();
+  for (const source of index.sources) {
+    if (!source || typeof source.url !== 'string' || urls.has(source.url) ||
+        !['read', 'partial', 'unsupported'].includes(source.status)) return null;
+    urls.add(source.url);
+  }
+  const ids = new Set();
+  for (const chunk of index.chunks) {
+    if (!chunk || typeof chunk.id !== 'string' || !/^[a-f0-9]{64}$/.test(chunk.id) ||
+        ids.has(chunk.id) || !urls.has(chunk.url) ||
+        (chunk.page !== null && (!Number.isSafeInteger(chunk.page) || chunk.page < 1)) ||
+        typeof chunk.excerpt !== 'string' || Array.from(chunk.excerpt).length > chunkSize ||
+        !Array.isArray(chunk.tokens) || chunk.tokens.length > chunkSize ||
+        !chunk.tokens.every(token => typeof token === 'string' && token.length > 0)) return null;
+    ids.add(chunk.id);
+  }
+  return index;
+}

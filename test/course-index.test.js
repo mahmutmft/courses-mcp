@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildCourseIndex, rankCourseIndexes } from '../src/course-index.js';
+import { buildCourseIndex, decodeCourseIndex, rankCourseIndexes } from '../src/course-index.js';
 
 const course = { id: 42, url: '/course/view.php?id=42', sections: [
   { name: 'Недела', resources: [] }, { name: 'Second week', resources: [] },
@@ -55,4 +55,15 @@ test('an oversized token is skipped and subsequent words remain searchable', () 
   }] }]);
   assert.ok(index.warnings.includes('INDEX_TOKEN_LIMIT'));
   assert.equal(rankCourseIndexes([index], 'deadline', 1)[0].page, 2);
+});
+
+test('stored indexes reject incompatible versions, course IDs and broken citations', () => {
+  const index = buildCourseIndex(course, [pdf]);
+  const decode = value => decodeCourseIndex(JSON.stringify(value), course.id);
+  assert.deepEqual(decode(index), index);
+  assert.equal(decode({ ...index, version: 2 }), null);
+  assert.equal(decode({ ...index, courseId: 43 }), null);
+  assert.equal(decode({ ...index, sources: [] }), null);
+  assert.equal(decode({ ...index, chunks: [index.chunks[0], index.chunks[0]] }), null);
+  assert.equal(decodeCourseIndex('{', course.id), null);
 });
