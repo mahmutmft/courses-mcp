@@ -22,15 +22,19 @@ export function buildCourseIndex(course, resources) {
     }
     seen.add(source.url);
     sources.push(source);
+    const markPartial = warning => {
+      source.status = 'partial';
+      warnings.add(warning);
+    };
     for (const { text, page } of blocks) {
       const boundedText = text.slice(0, maxChunks * chunkSize * 2);
       const characters = Array.from(boundedText);
-      if (boundedText.length < text.length) warnings.add('INDEX_TEXT_LIMIT');
+      if (boundedText.length < text.length) markPartial('INDEX_TEXT_LIMIT');
       let end = 0;
       const wordCharacter = /[\p{L}\p{M}\p{N}]/u;
       for (let offset = 0; offset < characters.length; offset = end) {
         if (chunks.length === maxChunks) {
-          warnings.add('INDEX_CHUNK_LIMIT');
+          markPartial('INDEX_CHUNK_LIMIT');
           return;
         }
         end = Math.min(offset + chunkSize, characters.length);
@@ -40,7 +44,7 @@ export function buildCourseIndex(course, resources) {
         if (end === offset) {
           // Skip an oversized token entirely rather than indexing its fragments.
           while (end < characters.length && wordCharacter.test(characters[end])) end++;
-          warnings.add('INDEX_TOKEN_LIMIT');
+          markPartial('INDEX_TOKEN_LIMIT');
           continue;
         }
         const excerpt = characters.slice(offset, end).join('');

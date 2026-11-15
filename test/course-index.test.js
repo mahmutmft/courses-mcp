@@ -22,9 +22,10 @@ test('index retains page citations, deduplicates sources and excludes other cour
 });
 
 test('index reports deterministic chunk limits', () => {
-  const index = buildCourseIndex(course, [{ ...pdf, pages: [{ pageNumber: 1, text: 'lab '.repeat(50_000) }] }]);
+  const index = buildCourseIndex(course, [{ ...pdf, status: 'read', pages: [{ pageNumber: 1, text: 'lab '.repeat(50_000) }] }]);
   assert.equal(index.chunks.length, 96);
   assert.ok(index.warnings.includes('INDEX_CHUNK_LIMIT'));
+  assert.equal(index.sources.find(source => source.url === pdf.sourceUrl).status, 'partial');
 });
 
 test('ranking normalizes case and composed Unicode and returns bounded cited hits', () => {
