@@ -24,3 +24,4 @@ Each account can keep up to 32 course records of at most 1 MiB each. Expired
 records still occupy a slot until deleted. Replacing an existing record does
 not use another slot. Cache writes and deletions share an exclusive account
 lock so concurrent writers cannot reserve the same remaining slot.
+Set MOODLE_CACHE_SEARCH_INDEXES=1 locally to reuse an index after freshly authorized evidence matches its stored fingerprint. Moodle reads still occur. Failed cache operations fall back to the live index.

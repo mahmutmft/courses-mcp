@@ -21,6 +21,7 @@ export function loadConfig(env = process.env) {
     baseUrl: 'https://courses.finki.ukim.mk',
     username: env.MOODLE_USERNAME || '',
     password: env.MOODLE_PASSWORD || '',
+    cacheSearchIndexes: env.MOODLE_CACHE_SEARCH_INDEXES === '1',
   };
 }
 
