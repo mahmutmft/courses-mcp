@@ -208,7 +208,11 @@ export class Moodle {
     for (const courseId of selected) {
       let course;
       try { course = await this.#discoverCourse(courseId, 5000); }
-      catch { coverage.push({ courseId, status: 'unavailable' }); continue; }
+      catch {
+        await cache.delete(courseId).catch(() => {});
+        coverage.push({ courseId, status: 'unavailable' });
+        continue;
+      }
       const checkedAt = new Date().toISOString();
       const resources = [];
       const unavailable = [];
@@ -222,6 +226,7 @@ export class Moodle {
         resources.every(resource => resource.status === 'read')
         ? createHash('sha256').update(JSON.stringify([course, resources.map(({ checkedAt, ...resource }) => resource)])).digest('hex')
         : null;
+      if (!fingerprint) await cache.delete(courseId).catch(() => {});
       const cached = fingerprint ? await cache.get(courseId).catch(() => null) : null;
       const reused = cached?.content === fingerprint ? decodeCourseIndex(cached.index, courseId) : null;
       const index = reused ?? buildCourseIndex(course, resources);
