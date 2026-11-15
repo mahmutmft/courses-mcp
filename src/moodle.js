@@ -206,11 +206,15 @@ export class Moodle {
     const coverage = [];
     const request = this.page.context().request;
     for (const courseId of selected) {
+      const warnings = [];
+      const invalidate = () => cache.delete(courseId).catch(() => {
+        warnings.push('CACHE_INVALIDATION_FAILED');
+      });
       let course;
       try { course = await this.#discoverCourse(courseId, 5000); }
       catch {
-        await cache.delete(courseId).catch(() => {});
-        coverage.push({ courseId, status: 'unavailable' });
+        await invalidate();
+        coverage.push({ courseId, status: 'unavailable', warnings });
         continue;
       }
       const checkedAt = new Date().toISOString();
@@ -226,7 +230,7 @@ export class Moodle {
         resources.every(resource => resource.status === 'read')
         ? createHash('sha256').update(JSON.stringify([course, resources.map(({ checkedAt, ...resource }) => resource)])).digest('hex')
         : null;
-      if (!fingerprint) await cache.delete(courseId).catch(() => {});
+      if (!fingerprint) await invalidate();
       const cached = fingerprint ? await cache.get(courseId).catch(() => null) : null;
       const reused = cached?.content === fingerprint ? decodeCourseIndex(cached.index, courseId) : null;
       const index = reused ?? buildCourseIndex(course, resources);
@@ -239,7 +243,7 @@ export class Moodle {
       indexes.push(index);
       coverage.push({ courseId, status: course.coverage?.partial || unavailable.length ||
         index.warnings.length || index.sources.some(source => source.status !== 'read') ? 'partial' : 'read',
-      checkedAt, indexReused: Boolean(reused), sources: index.sources, warnings: index.warnings, unavailableResourceIds: unavailable });
+      checkedAt, indexReused: Boolean(reused), sources: index.sources, warnings: [...index.warnings, ...warnings], unavailableResourceIds: unavailable });
     }
     return { matches: rankCourseIndexes(indexes, query, limit), coverage,
       scope: 'Live index of visible section text and explicitly selected supported HTML/PDF resources. Other documents and folders are outside this search.' };
