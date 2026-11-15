@@ -26,3 +26,4 @@ not use another slot. Cache writes and deletions share an exclusive account
 lock so concurrent writers cannot reserve the same remaining slot.
 Set MOODLE_CACHE_SEARCH_INDEXES=1 locally to reuse an index after freshly authorized evidence matches its stored fingerprint. Moodle reads still occur. Failed cache operations fall back to the live index.
 `search_courses` attempts to discard the stored course snapshot when live discovery fails or selected resources are incomplete. Searches use only current evidence in these cases, and cache deletion failures do not prevent live search.
+Per-course coverage includes CACHE_INVALIDATION_FAILED if the cached snapshot could not be removed. The response still reflects current Moodle evidence.
