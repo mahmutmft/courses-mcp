@@ -204,9 +204,10 @@ test('search reuses the index only for unchanged, currently readable evidence', 
   const moodle = new Moodle({ baseUrl: base, username: 'fixture', cacheSearchIndexes: true });
   let enrolled = true;
   let label = 'originalword';
+  let readable = true;
   moodle.listCourses = async () => ({ courses: enrolled ? [{ id: 42 }] : [] });
   moodle.page = { context: () => ({ request: { get: async () =>
-    response({ html: page(block(101, 1, label, 1)) }),
+    response({ status: readable ? 200 : 403, html: page(block(101, 1, label, 1)) }),
   } }) };
   const search = () => moodle.searchCourses([42], 'originalword', 10);
   assert.equal((await search()).coverage[0].indexReused, false);
@@ -215,6 +216,12 @@ test('search reuses the index only for unchanged, currently readable evidence', 
   const changed = await search();
   assert.equal(changed.coverage[0].indexReused, false);
   assert.deepEqual(changed.matches, []);
+  readable = false;
+  const denied = await search();
+  assert.equal(denied.coverage[0].status, 'unavailable');
+  assert.deepEqual(denied.matches, []);
+  readable = true;
+  assert.equal((await search()).coverage[0].indexReused, false);
   enrolled = false;
   await assert.rejects(search(), /not in your enrolled/);
 });
