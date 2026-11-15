@@ -1,3 +1,6 @@
+import { mkdtemp, rm } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -186,4 +189,32 @@ test('independent sections overlap while results retain discovery order', async 
   });
   assert.deepEqual(course.sections.map(section => section.number), [1, 2]);
   assert.equal(course.coverage.partial, false);
+});
+
+test('search reuses the index only for unchanged, currently readable evidence', async t => {
+  const temp = await mkdtemp(join(tmpdir(), 'finki-search-'));
+  t.after(() => rm(temp, { recursive: true, force: true }));
+  const key = process.platform === 'win32' ? 'LOCALAPPDATA' : 'XDG_DATA_HOME';
+  const previous = process.env[key];
+  process.env[key] = temp;
+  t.after(() => {
+    if (previous === undefined) delete process.env[key];
+    else process.env[key] = previous;
+  });
+  const moodle = new Moodle({ baseUrl: base, username: 'fixture', cacheSearchIndexes: true });
+  let enrolled = true;
+  let label = 'originalword';
+  moodle.listCourses = async () => ({ courses: enrolled ? [{ id: 42 }] : [] });
+  moodle.page = { context: () => ({ request: { get: async () =>
+    response({ html: page(block(101, 1, label, 1)) }),
+  } }) };
+  const search = () => moodle.searchCourses([42], 'originalword', 10);
+  assert.equal((await search()).coverage[0].indexReused, false);
+  assert.equal((await search()).coverage[0].indexReused, true);
+  label = 'replacementword';
+  const changed = await search();
+  assert.equal(changed.coverage[0].indexReused, false);
+  assert.deepEqual(changed.matches, []);
+  enrolled = false;
+  await assert.rejects(search(), /not in your enrolled/);
 });

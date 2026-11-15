@@ -1,4 +1,6 @@
-import { buildCourseIndex, rankCourseIndexes } from './course-index.js';
+import { createHash } from 'node:crypto';
+import { CourseCache } from './course-cache.js';
+import { buildCourseIndex, decodeCourseIndex, rankCourseIndexes } from './course-index.js';
 import { collectDeadlines } from './deadlines.js';
 import { chromium } from 'playwright';
 import { UserError, isCasLogin } from './config.js';
@@ -196,6 +198,10 @@ export class Moodle {
     if (documents.some(item => !selected.includes(item.courseId))) {
       throw new UserError('Select the course for every requested document.');
     }
+    const cache = new CourseCache(this.config, {
+      enabled: this.config.cacheSearchIndexes,
+      authorize: async id => selected.includes(id) && courses.some(course => course.id === id),
+    });
     const indexes = [];
     const coverage = [];
     const request = this.page.context().request;
@@ -211,12 +217,24 @@ export class Moodle {
         try { resources.push(await readResourceContent({ request, course, resourceId })); }
         catch { unavailable.push(resourceId); }
       }
-      const index = buildCourseIndex(course, resources);
-      for (const source of index.sources) source.checkedAt ??= checkedAt;
+      // Refresh evidence first so cached text cannot survive a visibility change.
+      const fingerprint = this.config.cacheSearchIndexes && !course.coverage?.partial && !unavailable.length &&
+        resources.every(resource => resource.status === 'read')
+        ? createHash('sha256').update(JSON.stringify([course, resources.map(({ checkedAt, ...resource }) => resource)])).digest('hex')
+        : null;
+      const cached = fingerprint ? await cache.get(courseId).catch(() => null) : null;
+      const reused = cached?.content === fingerprint ? decodeCourseIndex(cached.index, courseId) : null;
+      const index = reused ?? buildCourseIndex(course, resources);
+      if (fingerprint && !reused) {
+        await cache.set(courseId, { content: fingerprint, index: JSON.stringify(index) }).catch(() => {});
+      }
+      for (const source of index.sources) {
+        source.checkedAt = resources.find(resource => resource.sourceUrl === source.url)?.checkedAt ?? checkedAt;
+      }
       indexes.push(index);
       coverage.push({ courseId, status: course.coverage?.partial || unavailable.length ||
         index.warnings.length || index.sources.some(source => source.status !== 'read') ? 'partial' : 'read',
-      checkedAt, sources: index.sources, warnings: index.warnings, unavailableResourceIds: unavailable });
+      checkedAt, indexReused: Boolean(reused), sources: index.sources, warnings: index.warnings, unavailableResourceIds: unavailable });
     }
     return { matches: rankCourseIndexes(indexes, query, limit), coverage,
       scope: 'Live index of visible section text and explicitly selected supported HTML/PDF resources. Other documents and folders are outside this search.' };
