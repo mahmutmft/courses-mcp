@@ -1,3 +1,4 @@
+import { CourseCache } from '../src/course-cache.js';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -216,7 +217,15 @@ test('search reuses the index only for unchanged, currently readable evidence', 
   const changed = await search();
   assert.equal(changed.coverage[0].indexReused, false);
   assert.deepEqual(changed.matches, []);
+  const failedDelete = t.mock.method(CourseCache.prototype, 'delete', async () => {
+    throw new Error('private filesystem path');
+  });
   readable = false;
+  const unavailable = await search();
+  assert.deepEqual(unavailable.coverage[0].warnings, ['CACHE_INVALIDATION_FAILED']);
+  assert.deepEqual(unavailable.matches, []);
+  assert.doesNotMatch(JSON.stringify(unavailable), /private filesystem path|originalword|replacementword/);
+  failedDelete.mock.restore();
   const denied = await search();
   assert.equal(denied.coverage[0].status, 'unavailable');
   assert.deepEqual(denied.matches, []);
