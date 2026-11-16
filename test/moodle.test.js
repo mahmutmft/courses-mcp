@@ -82,3 +82,22 @@ test('dashboard streams bounded JSON and cancels an oversized body', async t => 
   globalThis.fetch.mock.mockImplementation(async () => new Response('<html>synthetic private text</html>'));
   await assert.rejects(moodle.ajax('fixture', {}), { message: /COURSE_API_FORMAT/ });
 });
+
+test('enrollment pagination stops when its shared time budget expires', async t => {
+  const moodle = new Moodle({});
+  moodle.login = async () => {};
+  moodle.page = { goto: async () => {} };
+  moodle.isAuthenticated = async () => true;
+  let now = 0;
+  t.mock.method(performance, 'now', () => now);
+  const timeouts = [];
+  moodle.ajax = async (_, { offset }, timeout) => {
+    timeouts.push(timeout);
+    now += 8000;
+    return { courses: [{ id: offset + 10, fullname: 'Synthetic' }], nextoffset: offset + 1 };
+  };
+  const result = await moodle.listCourses();
+  assert.deepEqual(timeouts, [10000, 10000, 10000, 6000]);
+  assert.equal(result.truncated, true);
+  assert.equal(result.courses.length, 4);
+});
