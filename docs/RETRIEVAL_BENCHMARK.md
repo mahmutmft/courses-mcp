@@ -15,3 +15,5 @@ corpus only means no match was found in the indexed text.
 Initial synthetic baseline: 25/25 answerable queries hit the expected citation,
 6/6 no-match queries returned no hits, and all returned citations were valid.
 These scores describe the fixtures and do not estimate live Moodle coverage.
+
+CI runs the benchmark in the required Node checks and tests job on pull requests and default-branch pushes.
