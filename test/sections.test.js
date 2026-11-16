@@ -248,3 +248,19 @@ test('search reuses the index only for unchanged, currently readable evidence', 
   enrolled = false;
   await assert.rejects(search(), /not in your enrolled/);
 });
+
+test('cross-course search distinguishes capped hits from complete results', async () => {
+  const moodle = new Moodle({});
+  moodle.listCourses = async () => ({ courses: [{ id: 42 }] });
+  const html = page(block(101, 1, 'Searchable', 1, ' searchable '.repeat(150)));
+  moodle.page = { context: () => ({ request: { get: async () => response({ html }) } }) };
+  const capped = await moodle.searchCourses([42], 'searchable', 1);
+  const full = await moodle.searchCourses([42], 'searchable', 30);
+  assert.equal(capped.matches.length, 1);
+  assert.equal(capped.truncated, true);
+  assert.equal(full.truncated, false);
+  assert.deepEqual(capped.matches.map(hit => hit.id), full.matches.slice(0, 1).map(hit => hit.id));
+  const empty = await moodle.searchCourses([42], 'unmatchedword', 1);
+  assert.deepEqual(empty.matches, []);
+  assert.equal(empty.truncated, false);
+});
