@@ -253,7 +253,8 @@ export class Moodle {
         index.warnings.length || index.sources.some(source => source.status !== 'read') ? 'partial' : 'read',
       checkedAt, indexReused: Boolean(reused), sources: index.sources, warnings: [...index.warnings, ...warnings], unavailableResourceIds: unavailable });
     }
-    return { matches: rankCourseIndexes(indexes, query, limit), coverage,
+    const ranked = rankCourseIndexes(indexes, query, limit + 1);
+    return { matches: ranked.slice(0, limit), truncated: ranked.length > limit, coverage,
       scope: 'Live index of visible section text and explicitly selected supported HTML/PDF resources. Other documents and folders are outside this search.' };
   }
 

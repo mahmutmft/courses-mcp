@@ -52,3 +52,5 @@ Enrollment pagination has a 30-second request budget after dashboard authenticat
 See [Moodle reader budgets](READER_BUDGETS.md) for request, processing and buffering limits.
 
 Cross-course hits include courseName and sourceName where the reader supplied titles. Section snippets may have a null sourceName.
+
+For search_courses, truncated is true when ranked matches exceed the requested result limit. Course coverage separately reports how much evidence could be indexed.
