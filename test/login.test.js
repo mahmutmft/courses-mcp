@@ -158,3 +158,16 @@ test('successful session is kept and reused without a second browser or submissi
   assert.equal(calls.submit, 1);
   await moodle.close();
 });
+
+test('login disposes the result handle when reading its value fails', async () => {
+  const { moodle, page, calls } = mockLogin();
+  let disposed = false;
+  page.waitForFunction = async () => ({
+    jsonValue: async () => { throw new Error(secret); },
+    dispose: async () => { disposed = true; },
+  });
+  await assert.rejects(moodle.login(), error => error.code === 'LOGIN_FAILED' && !error.message.includes(secret));
+  assert.equal(disposed, true);
+  assert.equal(calls.close, 1);
+  assert.equal(calls.submit, 1);
+});
