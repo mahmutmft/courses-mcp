@@ -93,8 +93,7 @@ export class Moodle {
       stage = 'submit';
       await pass.press('Enter');
       const handle = await this.page.waitForFunction(loginOutcome, { submitted: true }, { timeout: 30000 });
-      const outcome = await handle.jsonValue();
-      await handle.dispose();
+      const outcome = await handle.jsonValue().finally(() => handle.dispose().catch(() => {}));
       if (httpFailure) throw new LoginError('LOGIN_SERVICE');
       if (outcome !== 'authenticated') throw new LoginError(outcome);
     } catch (error) {
