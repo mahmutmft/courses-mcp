@@ -30,6 +30,8 @@ You are an engineering assistant working in this repository. Inspect `docs/PROJE
 - Do not approve/merge based solely on your own AI review.
 
 ## GitHub operations
+
+- Follow the release status routine in [docs/RELEASING.md](docs/RELEASING.md) when resuming project work and after release-related merges.
 - Labels: `type:feature`, `type:bug`, `type:chore`, `priority:high`, `priority:medium`, `priority:low`, `area:frontend`, `area:backend`, `area:docs`, `status:blocked`.
 - PR must link to issue where one exists, describe testing, and note risks.
 - Never bypass branch rules, required reviews or checks.

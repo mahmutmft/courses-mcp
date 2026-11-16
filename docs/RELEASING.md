@@ -4,6 +4,13 @@ Use package.json as the version source. npm also records the version in package-
 
 For stable releases, use patch versions for compatible fixes, minor versions for compatible features, and major versions for breaking changes to documented tool contracts. Document renamed tools or fields, configuration changes, local data migrations, and rollback steps in the changelog. Move reviewed Unreleased entries under the release version and date.
 
+## Maintain release status
+
+- When resuming project work, compare the latest published GitHub Release and its tag with the version in package.json, the Unreleased changelog entries, and the active milestone. Report the published version and the next release status when relevant.
+- After a release-related PR merges, review its actual changes and linked issues. Update Unreleased for user-facing changes and reconcile the milestone checklist with completed and remaining work.
+- Record new ideas as issues. Assign them to a release milestone when the scope is agreed and plan one next release at a time.
+- Before publishing, verify the exact version, commit, tag and release notes using the review checklist below.
+
 ## Review checklist
 
 - Verify the required gates in roadmap issue [#28](https://github.com/mahmutmft/courses-mcp/issues/28), including retrieval benchmarks, supported client and Windows validation, and independent security review.
