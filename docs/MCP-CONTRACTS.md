@@ -32,3 +32,17 @@ Where available, sourceUrl or per-item sources identify evidence. checkedAt reco
 Search queries accept up to 200 characters and return at most 100 matches (default 30). Coursework deadline lookup accepts up to 10 course IDs and reads at most 24 activities. Other readers apply tool-specific page, text and traversal limits. See [README](../README.md), [folder contracts](FOLDERS.md) and [timetable contracts](TIMETABLES.md).
 
 Tool annotations identify both preference setters as local writes. Invoke them only for an explicit request to save or reset a preference. Moodle access is read-only.
+
+## Cross-course search coverage
+
+search_courses accepts 1–4 enrolled course IDs and up to three explicitly
+selected HTML or PDF resources. The query is limited to 200 characters.
+The default result limit is 10, with a maximum of 30. An unavailable course
+has no hits and is reported in coverage. Unselected documents and folders
+are outside the search scope.
+
+An opt-in local cache can reuse the search index when fresh Moodle evidence
+matches the stored fingerprint. A course's indexReused flag reports reuse.
+The checkedAt timestamp reflects the live read. CACHE_INVALIDATION_FAILED
+means the old snapshot could not be removed. Search still uses current
+evidence. See [private cache settings and limits](COURSE_CACHE.md).
