@@ -113,9 +113,9 @@ export class Moodle {
         document.querySelector('a[href*="/login/logout.php"]') && !document.querySelector('.usermenu .login')));
   }
 
-  async ajax(methodname, args) {
-    const result = await this.page.evaluate(async ({ methodname, args }) => {
-      const signal = AbortSignal.timeout(10000);
+  async ajax(methodname, args, timeout = 10000) {
+    const result = await this.page.evaluate(async ({ methodname, args, timeout }) => {
+      const signal = AbortSignal.timeout(timeout);
       const maxBytes = 2 * 1024 * 1024;
       let text = '';
       try {
@@ -144,7 +144,7 @@ export class Moodle {
       catch { return { failed: 'format' }; }
       if (!Array.isArray(data)) return { failed: 'format' };
       return data[0]?.error ? { failed: true } : { data: data[0]?.data };
-    }, { methodname, args });
+    }, { methodname, args, timeout });
     if (result.failed === 'size') throw new UserError('The Moodle course API response exceeded 2 MiB (COURSE_API_SIZE_LIMIT).');
     if (result.failed === 'format') throw new UserError('The Moodle course API returned an unsupported response (COURSE_API_FORMAT).');
     if (result.failed === 'timeout') throw new UserError('The Moodle course API timed out (COURSE_API_TIMEOUT).');
@@ -159,11 +159,14 @@ export class Moodle {
     if (!await this.isAuthenticated()) throw new UserError('Moodle session expired. Restart the server to sign in again.');
     const courses = [];
     let offset = 0;
+    const deadline = performance.now() + 30000;
     // Standard Moodle dashboard AJAX API; fetch every page with a safety cap.
     for (let page = 0; page < 100; page++) {
+      const remaining = Math.floor(deadline - performance.now());
+      if (remaining <= 0) break;
       const data = await this.ajax('core_course_get_enrolled_courses_by_timeline_classification', {
         classification: 'all', limit: 100, offset, sort: 'fullname', customfieldname: '', customfieldvalue: '',
-      });
+      }, Math.min(10000, remaining));
       if (!Array.isArray(data.courses) || data.courses.length > 100) throw new UserError('Moodle returned an unsupported course response.');
       courses.push(...data.courses);
       const next = Number(data.nextoffset);
