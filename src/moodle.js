@@ -233,11 +233,17 @@ export class Moodle {
         ? createHash('sha256').update(JSON.stringify([course, resources.map(({ checkedAt, ...resource }) => resource)])).digest('hex')
         : null;
       if (!fingerprint) await invalidate();
-      const cached = fingerprint ? await cache.get(courseId).catch(() => null) : null;
+      const cached = fingerprint ? await cache.get(courseId).catch(() => {
+        warnings.push('CACHE_READ_FAILED');
+        return null;
+      }) : null;
       const reused = cached?.content === fingerprint ? decodeCourseIndex(cached.index, courseId) : null;
+      if (cached?.content === fingerprint && !reused) warnings.push('CACHE_INDEX_INVALID');
       const index = reused ?? buildCourseIndex(course, resources);
       if (fingerprint && !reused) {
-        await cache.set(courseId, { content: fingerprint, index: JSON.stringify(index) }).catch(() => {});
+        await cache.set(courseId, { content: fingerprint, index: JSON.stringify(index) }).catch(() => {
+          warnings.push('CACHE_WRITE_FAILED');
+        });
       }
       for (const source of index.sources) {
         source.checkedAt = resources.find(resource => resource.sourceUrl === source.url)?.checkedAt ?? checkedAt;

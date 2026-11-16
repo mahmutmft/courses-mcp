@@ -217,6 +217,20 @@ test('search reuses the index only for unchanged, currently readable evidence', 
   const changed = await search();
   assert.equal(changed.coverage[0].indexReused, false);
   assert.deepEqual(changed.matches, []);
+  const failedRead = t.mock.method(CourseCache.prototype, 'get', async () => {
+    throw new Error('private cache path');
+  });
+  const failedWrite = t.mock.method(CourseCache.prototype, 'set', async () => {
+    throw new Error('private cache path');
+  });
+  const live = await moodle.searchCourses([42], 'replacementword', 10);
+  assert.ok(live.matches.length > 0);
+  assert.equal(live.coverage[0].status, 'read');
+  assert.equal(live.coverage[0].indexReused, false);
+  assert.deepEqual(live.coverage[0].warnings, ['CACHE_READ_FAILED', 'CACHE_WRITE_FAILED']);
+  assert.doesNotMatch(JSON.stringify(live), /private cache path/);
+  failedRead.mock.restore();
+  failedWrite.mock.restore();
   const failedDelete = t.mock.method(CourseCache.prototype, 'delete', async () => {
     throw new Error('private filesystem path');
   });
