@@ -48,3 +48,5 @@ means the old snapshot could not be removed. Search still uses current
 evidence. See [private cache settings and limits](COURSE_CACHE.md).
 
 Enrollment pagination has a 30-second request budget after dashboard authentication, with up to 10 seconds per API call. If time runs out between pages, the result returns collected courses with truncated set to true.
+
+See [Moodle reader budgets](READER_BUDGETS.md) for request, processing and buffering limits.
