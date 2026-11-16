@@ -230,7 +230,7 @@ export class Moodle {
       // Refresh evidence first so cached text cannot survive a visibility change.
       const fingerprint = this.config.cacheSearchIndexes && !course.coverage?.partial && !unavailable.length &&
         resources.every(resource => resource.status === 'read')
-        ? createHash('sha256').update(JSON.stringify([course, resources.map(({ checkedAt, ...resource }) => resource)])).digest('hex')
+        ? createHash('sha256').update(JSON.stringify([2, course, resources.map(({ checkedAt, ...resource }) => resource)])).digest('hex')
         : null;
       if (!fingerprint) await invalidate();
       const cached = fingerprint ? await cache.get(courseId).catch(() => {

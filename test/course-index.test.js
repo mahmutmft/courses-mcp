@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { buildCourseIndex, decodeCourseIndex, rankCourseIndexes } from '../src/course-index.js';
 
-const course = { id: 42, url: '/course/view.php?id=42', sections: [
+const course = { id: 42, name: 'Synthetic databases', url: '/course/view.php?id=42', sections: [
   { name: 'Недела', resources: [] }, { name: 'Second week', resources: [] },
 ] };
-const pdf = { courseId: 42, sourceUrl: '/mod/resource/view.php?id=1',
+const pdf = { courseId: 42, name: 'Synthetic notes', sourceUrl: '/mod/resource/view.php?id=1',
   status: 'partial', format: 'pdf', checkedAt: '2026-11-14T08:00:00Z',
   pages: [{ pageNumber: 2, text: 'Распоред LAB' }, { pageNumber: 3, text: 'Lab notes' }],
 };
@@ -37,6 +37,8 @@ test('ranking normalizes case and composed Unicode and returns bounded cited hit
   assert.equal(hit.score, 2);
   assert.equal(hit.page, 2);
   assert.equal(hit.url, pdf.sourceUrl);
+  assert.equal(hit.courseName, course.name);
+  assert.equal(hit.sourceName, pdf.name);
   assert.equal(hit.checkedAt, pdf.checkedAt);
   assert.deepEqual(rankCourseIndexes([index], 'missing', 10), []);
 });

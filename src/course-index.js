@@ -73,20 +73,24 @@ export function buildCourseIndex(course, resources) {
     const blocks = !['read', 'partial'].includes(resource.status) ? [] : resource.format === 'pdf'
       ? (resource.pages ?? []).map(page => ({ text: page.text, page: page.pageNumber }))
       : [{ text: resource.text ?? '', page: null }];
-    add({ url: resource.sourceUrl, status: resource.status, checkedAt: resource.checkedAt }, blocks);
+    add({ url: resource.sourceUrl, status: resource.status, name: resource.name ?? null, checkedAt: resource.checkedAt }, blocks);
   }
   if (resources.length > maxSources) warnings.add('INDEX_SOURCE_LIMIT');
-  return { version: 1, courseId: course.id, sources, chunks, warnings: [...warnings] };
+  return { version: 1, courseId: course.id, courseName: course.name ?? null, sources, chunks, warnings: [...warnings] };
 }
 
 export function rankCourseIndexes(indexes, query, limit) {
   const terms = [...new Set(tokenize(query))];
   if (!terms.length) return [];
-  return indexes.flatMap(index => index.chunks.map(({ tokens, ...chunk }) => ({
-    ...chunk, courseId: index.courseId, indexVersion: index.version,
-    checkedAt: index.sources.find(source => source.url === chunk.url)?.checkedAt ?? null,
-    score: terms.filter(term => tokens.includes(term)).length,
-  }))).filter(hit => hit.score > 0)
+  return indexes.flatMap(index => index.chunks.map(({ tokens, ...chunk }) => {
+    const source = index.sources.find(item => item.url === chunk.url);
+    return {
+      ...chunk, courseId: index.courseId, indexVersion: index.version,
+      courseName: index.courseName ?? null, sourceName: source?.name ?? null,
+      checkedAt: source?.checkedAt ?? null,
+      score: terms.filter(term => tokens.includes(term)).length,
+    };
+  })).filter(hit => hit.score > 0)
     .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id))
     .slice(0, limit);
 }
