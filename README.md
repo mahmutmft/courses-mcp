@@ -1,5 +1,7 @@
 # FINKI Courses MCP
 
+![Courses MCP banner](docs/assets/courses-mcp-banner.png)
+
 Local MCP server for finding material in your authorized courses at https://courses.finki.ukim.mk/. Moodle access is read-only; explicit personal attendance preferences can be written to local application data.
 
 See the [versioned roadmap](docs/ROADMAP.md) for the v1.0 goal, planned releases, and contribution priorities. Roadmap features are proposals until shipped.
