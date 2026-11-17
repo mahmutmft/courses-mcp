@@ -89,3 +89,15 @@ test('a separate conflicting announcement preserves both versions', () => {
     'https://example.test/post/0', 'https://example.test/post/1',
   ]);
 });
+
+test('semester-wide prose flags a revision without assigning a group or effective date', () => {
+  const result = resolveLabChanges(expansion, forum(
+    'Терминот од лабораторија 7 во вторник 14:00-15:00 се преместува во лабораторија 9 во вторник 16:00-17:00. Промената ќе важи за целиот семестар.',
+  ));
+  assert.equal(result.status, 'partial');
+  assert.deepEqual(result.sessions.map(item => item.status), ['timetable', 'timetable']);
+  assert.equal(result.unresolved[0].statedScope, 'semester');
+  assert.equal(result.unresolved[0].evidence.sourceUrl, 'https://example.test/post/0');
+  const single = resolveLabChanges(expansion, forum('The lab was moved for one week.'));
+  assert.equal(single.unresolved[0].statedScope, undefined);
+});

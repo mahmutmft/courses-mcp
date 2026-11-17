@@ -85,3 +85,5 @@ post are validated together. A malformed, unmatched or duplicate in-range
 row leaves the revision unapplied. Omitted slots retain their original evidence.
 Conflicting separate posts remain visible. Revision prose or attachments still
 require manual review.
+
+A possible prose change can carry statedScope=semester when the announcement explicitly mentions a semester-wide duration. This is a review hint. A live Macedonian announcement verified through the reader mentioned weekday, old and new time and room, and semester duration, with the group and exact effective date absent from the text. Tests use synthetic wording and values.
