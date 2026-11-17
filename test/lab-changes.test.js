@@ -101,3 +101,16 @@ test('semester-wide prose flags a revision without assigning a group or effectiv
   const single = resolveLabChanges(expansion, forum('The lab was moved for one week.'));
   assert.equal(single.unresolved[0].statedScope, undefined);
 });
+
+test('free-text move links one matching old slot but stays unresolved', () => {
+  const original = { ...expansion.occurrences[0], room: '7', endTime: '15:00' };
+  const post = forum('Терминот од лабораторија 7 во вторник 14:00-15:00 се преместува во лабораторија 9 во четврток 16:00-17:00ч.');
+  const result = resolveLabChanges({ ...expansion, occurrences: [original] }, post);
+  assert.equal(result.sessions[0].status, 'timetable');
+  assert.deepEqual(result.unresolved[0].possibleMove, {
+    occurrenceId: original.id,
+    proposedSlot: { weekdayLabel: 'четврток', room: '9', startTime: '16:00', endTime: '17:00' },
+  });
+  const ambiguous = resolveLabChanges({ ...expansion, occurrences: [original, { ...original, id: 'other' }] }, post);
+  assert.equal(ambiguous.unresolved[0].possibleMove, undefined);
+});
