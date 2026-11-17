@@ -55,3 +55,37 @@ test('unstructured lab changes retain evidence without altering timetable candid
   assert.equal(result.unresolved[0].reason, 'POSSIBLE_UNSTRUCTURED_LAB_CHANGE');
   assert.equal(result.unresolved[0].evidence.sourceUrl, 'https://example.test/post/0');
 });
+
+const revision = (...rows) => rows.map(row => row.replace('Lab change:', 'Lab revision:')).join('\n');
+const groupB = 'Lab change: move | B | 2026-11-10 14:00 | 2026-11-13 16:00 | 300ab';
+
+test('a revision replaces multiple slots and preserves separate group identities', () => {
+  const result = resolveLabChanges(expansion, forum(revision(cancel, groupB)));
+  assert.deepEqual(result.sessions.map(item => item.status), ['cancelled', 'moved']);
+  assert.equal(result.sessions[1].replacement.id, 'b');
+  assert.equal(result.sessions[1].replacement.date, '2026-11-13');
+  assert.equal(result.sessions[1].replacement.room, '300ab');
+  assert.equal(result.sessions[1].evidence[0].sourceUrl, 'https://example.test/post/0');
+});
+
+test('invalid, unmatched or duplicate revision rows leave the entire revision unapplied', () => {
+  for (const badRow of [
+    groupB.replace('2026-11-13', '2026-02-30'),
+    groupB.replace(' | B |', ' | C |'),
+    move,
+  ]) {
+    const result = resolveLabChanges(expansion, forum(revision(cancel, badRow)));
+    assert.equal(result.status, 'partial');
+    assert.deepEqual(result.sessions.map(item => item.status), ['timetable', 'timetable']);
+    assert.ok(result.unresolved.some(item => item.reason === 'LAB_REVISION_NOT_APPLIED'));
+  }
+});
+
+test('a separate conflicting announcement preserves both versions', () => {
+  const result = resolveLabChanges(expansion, forum(revision(cancel, groupB), move));
+  assert.equal(result.status, 'partial');
+  assert.deepEqual(result.sessions.map(item => item.status), ['conflict', 'moved']);
+  assert.deepEqual(result.sessions[0].proposals.map(item => item.evidence.sourceUrl), [
+    'https://example.test/post/0', 'https://example.test/post/1',
+  ]);
+});

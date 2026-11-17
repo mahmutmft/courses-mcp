@@ -76,3 +76,12 @@ partial coverage. Empty results do not establish absence.
 Posts that mention both labs and a supported change term in free text are
 flagged as possible changes for review, with the announcement source. The
 signal is approximate and does not establish the affected date or group.
+
+### Structured timetable revisions
+
+Use Lab revision: (or Ревизија на лаб:) with the same row syntax as Lab change:
+for each explicitly replaced or cancelled slot. In-range rows in one starter
+post are validated together. A malformed, unmatched or duplicate in-range
+row leaves the revision unapplied. Omitted slots retain their original evidence.
+Conflicting separate posts remain visible. Revision prose or attachments still
+require manual review.
