@@ -76,6 +76,6 @@ export class CourseCache extends LabPreferences {
 
   async delete(courseId) {
     if (!await this.#canAccess(courseId)) return null;
-    await this.update(courseId, () => null, { accountLock: true });
+    await this.update(courseId, null, { accountLock: true, discard: true });
   }
 }

@@ -83,7 +83,7 @@ export class LabPreferences {
     return describe(courseId, record);
   }
 
-  async update(courseId, transform, { accountLock = false } = {}) {
+  async update(courseId, transform, { accountLock = false, discard = false } = {}) {
     let lock;
     let acquiredLockPath;
     let temp;
@@ -95,6 +95,16 @@ export class LabPreferences {
       try { lock = await open(lockPath, 'wx', 0o600); }
       catch (error) { if (error.code === 'EEXIST') throw new PreferenceError('PREFERENCE_BUSY'); throw error; }
       acquiredLockPath = lockPath;
+      if (discard) {
+        const stat = await lstat(file).catch(error => {
+          if (error.code === 'ENOENT') return null;
+          throw error;
+        });
+        if (!stat) return null;
+        if (!stat.isFile() || stat.isSymbolicLink()) throw new PreferenceError('INVALID_PREFERENCE_FILE');
+        await unlink(file);
+        return null;
+      }
       const current = await this.load(file);
       const record = await transform(current, file);
       if (record === null) {
