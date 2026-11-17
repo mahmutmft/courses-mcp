@@ -7,6 +7,7 @@ const prefix = /^(?:Lab change|Промена на лаб)\s*:/iu;
 const revisionPrefix = /^(?:Lab revision|Ревизија на лаб)\s*:/iu;
 const labMention = /\blabs?\b|лаборатор|\blaborator/iu;
 const changeMention = /\bcancell?ed\b|\b(?:rescheduled|postponed|moved|revised|updated)\b|откаж|премест|одлож|ревидиран|изменет/iu;
+const semesterMention = /за (?:целиот|остатокот од) семестар|for the (?:entire semester|rest of the semester)/iu;
 const directive = new RegExp(
   '^([^:]+): (cancel|move|откажано|преместено) \\| ' + token +
   ' \\| ' + date + ' ' + time + '(?: \\| ' + date + ' ' + time + '(?:-' + time + ')? \\| ' + token + ')?$', 'iu',
@@ -38,7 +39,11 @@ export function resolveLabChanges(expansion, announcements) {
     const postUnresolved = [];
     const prose = [post.title ?? '', ...lines.filter(line => !prefix.test(line) && !revisionPrefix.test(line))].join(' ');
     if (labMention.test(prose) && changeMention.test(prose)) {
-      unresolved.push({ reason: 'POSSIBLE_UNSTRUCTURED_LAB_CHANGE', evidence });
+      unresolved.push({
+        reason: 'POSSIBLE_UNSTRUCTURED_LAB_CHANGE',
+        ...(semesterMention.test(prose) ? { statedScope: 'semester' } : {}),
+        evidence,
+      });
     }
     for (const line of lines) {
       const revisionLine = revisionPrefix.test(line);
