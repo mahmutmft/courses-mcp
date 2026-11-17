@@ -87,3 +87,5 @@ Conflicting separate posts remain visible. Revision prose or attachments still
 require manual review.
 
 A possible prose change can carry statedScope=semester when the announcement explicitly mentions a semester-wide duration. This is a review hint. A live Macedonian announcement verified through the reader mentioned weekday, old and new time and room, and semester duration, with the group and exact effective date absent from the text. Tests use synthetic wording and values.
+
+For the supported Macedonian prose move pattern, possibleMove links a unique original occurrence by weekday, exact time range and room. Its proposedSlot carries the stated weekday, time and room. This is unresolved evidence because the announcement supplies no exact date or group.

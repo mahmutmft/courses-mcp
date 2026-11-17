@@ -28,6 +28,29 @@ function parseChange(line) {
   };
 }
 
+const weekdays = ['недела', 'понеделник', 'вторник', 'среда', 'четврток', 'петок', 'сабота'];
+const proseSlot = new RegExp(
+  '^(?:Поради [^,]{1,150}, )?Терминот од лабораторија ' + token + ' во (' + weekdays.join('|') + ') ' +
+  time + '[-–]' + time + '(?:ч\\.)? се преместува во лабораторија ' + token +
+  ' во (' + weekdays.join('|') + ') ' + time + '[-–]' + time + '(?:ч)?\\.(?= |$)', 'iu',
+);
+
+function matchPossibleMove(lines, occurrences) {
+  const matches = lines.map(line => proseSlot.exec(line.trim())).filter(Boolean);
+  if (matches.length !== 1) return null;
+  const [, oldRoom, oldDay, oldStart, oldEnd, newRoom, newDay, newStart, newEnd] = matches[0];
+  if (oldEnd <= oldStart || newEnd <= newStart) return null;
+  const weekday = date => weekdays[new Date(date + 'T00:00:00Z').getUTCDay()];
+  const candidates = occurrences.filter(item =>
+    weekday(item.date) === oldDay.toLowerCase() && item.startTime === oldStart &&
+    item.endTime === oldEnd && item.room === canonical(oldRoom).toLowerCase());
+  if (candidates.length !== 1) return null;
+  return {
+    occurrenceId: candidates[0].id,
+    proposedSlot: { weekdayLabel: newDay.toLowerCase(), startTime: newStart, endTime: newEnd, room: canonical(newRoom).toLowerCase() },
+  };
+}
+
 export function resolveLabChanges(expansion, announcements) {
   const changes = [];
   const unresolved = [];
@@ -39,8 +62,10 @@ export function resolveLabChanges(expansion, announcements) {
     const postUnresolved = [];
     const prose = [post.title ?? '', ...lines.filter(line => !prefix.test(line) && !revisionPrefix.test(line))].join(' ');
     if (labMention.test(prose) && changeMention.test(prose)) {
+      const possibleMove = matchPossibleMove(lines, expansion.occurrences);
       unresolved.push({
         reason: 'POSSIBLE_UNSTRUCTURED_LAB_CHANGE',
+        ...(possibleMove ? { possibleMove } : {}),
         ...(semesterMention.test(prose) ? { statedScope: 'semester' } : {}),
         evidence,
       });
