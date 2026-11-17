@@ -26,7 +26,13 @@ export function buildCourseIndex(course, resources) {
       source.status = 'partial';
       warnings.add(warning);
     };
+    const seenPages = new Set();
     for (const { text, page } of blocks) {
+      if (page !== null && (!Number.isSafeInteger(page) || page < 1 || seenPages.has(page))) {
+        markPartial('INDEX_INVALID_PAGE_REFERENCE');
+        continue;
+      }
+      seenPages.add(page);
       const boundedText = text.slice(0, maxChunks * chunkSize * 2);
       const characters = Array.from(boundedText);
       if (boundedText.length < text.length) markPartial('INDEX_TEXT_LIMIT');

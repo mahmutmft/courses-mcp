@@ -69,3 +69,16 @@ test('stored indexes reject incompatible versions, course IDs and broken citatio
   assert.equal(decode({ ...index, chunks: [index.chunks[0], index.chunks[0]] }), null);
   assert.equal(decodeCourseIndex('{', course.id), null);
 });
+
+test('index skips repeated or invalid PDF page references and marks coverage partial', () => {
+  const index = buildCourseIndex(course, [{ ...pdf, status: 'read', pages: [
+    { pageNumber: 2, text: 'original' },
+    { pageNumber: 2, text: 'duplicate' },
+    { pageNumber: 0, text: 'invalid' },
+    { pageNumber: 4, text: 'later page' },
+  ] }]);
+  assert.deepEqual(index.chunks.filter(chunk => chunk.url === pdf.sourceUrl).map(chunk => chunk.page), [2, 4]);
+  assert.equal(index.sources.find(source => source.url === pdf.sourceUrl).status, 'partial');
+  assert.ok(index.warnings.includes('INDEX_INVALID_PAGE_REFERENCE'));
+  assert.deepEqual(decodeCourseIndex(JSON.stringify(index), course.id), index);
+});
