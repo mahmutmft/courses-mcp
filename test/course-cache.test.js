@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtemp, rm, writeFile, symlink } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, symlink, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { CourseCache } from '../src/course-cache.js';
@@ -51,6 +51,9 @@ test('cache refuses busy writes, corrupted records and linked directories', asyn
   assert.equal((await store.get(1)).content, input.content);
   await writeFile(path, '{"schemaVersion":99}');
   await assert.rejects(store.get(1), /CACHE_INVALID_RECORD/);
+  await unlink(join(dirname(path), '.account.lock'));
+  await store.delete(1);
+  assert.equal(await store.inspect(1), null);
   const alias = join(temp, 'alias');
   await symlink(options.root, alias, 'junction');
   await assert.rejects(new CourseCache(config, { ...options, root: alias }).get(1), /UNSAFE_STORAGE_DIRECTORY/);
