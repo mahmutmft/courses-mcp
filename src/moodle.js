@@ -1,3 +1,4 @@
+import { collectWeeklyLabs } from './weekly-labs.js';
 import { createHash } from 'node:crypto';
 import { CourseCache } from './course-cache.js';
 import { buildCourseIndex, decodeCourseIndex, rankCourseIndexes } from './course-index.js';
@@ -341,6 +342,15 @@ export class Moodle {
     const { courses } = await this.listCourses();
     if (!courses.some(course => course.id === courseId)) throw new UserError('Course is not in your enrolled course list.');
     return attendance === undefined ? this.preferences.get(courseId) : this.preferences.set(courseId, attendance);
+  }
+
+  async getWeeklyLabs(courseIds, weekStart) {
+    const { courses } = await this.listCourses();
+    if (courseIds.some(id => !courses.some(course => course.id === id))) {
+      throw new UserError('A selected course is not in your enrolled course list.');
+    }
+    return collectWeeklyLabs({ courseIds, weekStart,
+      readSchedule: (courseId, start) => this.getLabSchedule(courseId, start) });
   }
 
   async getLabSchedule(courseId, weekStart) {
