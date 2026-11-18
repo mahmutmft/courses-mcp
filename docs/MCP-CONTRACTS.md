@@ -1,5 +1,24 @@
 # MCP tool contracts
 
+## PDF resource continuation
+
+read_resource accepts optional startPage (positive, 1-based, PDF resources only).
+Omission starts at page 1. Each call still downloads and authorizes the resource
+and extracts at most 30 pages within the existing 10 MiB, 60,000-character and
+worker time limits. A 54-page document can be inspected with startPage=1, then
+startPage=31. Original page numbers and source URLs are preserved.
+
+PDF results expose startPage, nextPage and partialPages. Follow nextPage until
+null; this does not certify complete text: blank, failed or text-truncated pages
+remain explicit. A character-budget cut after earlier pages may set nextPage to
+the same last page so a fresh call can recover its text. A single page exceeding
+the per-page text cap remains in partialPages and cannot be fully recovered by
+page selection alone. Out-of-range pages return PDF_PAGE_OUT_OF_RANGE. Later-page
+calls remain partial because they exclude the beginning of the document. No
+automatic full-file crawl or expanded search scope is introduced. HTML resources
+reject explicit startPage rather than silently ignoring it. Restart the MCP
+client after updating to discover the new input.
+
 The server uses stdio. Restart the client connection after updating the checkout so it initializes the new server and refreshes its tool list. The initialization version comes from package.json. See [release workflow](RELEASING.md) for compatibility and migrations.
 
 | Tool | Inputs | Result |

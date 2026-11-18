@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Continue PDF resource reads with startPage and nextPage while preserving per-call limits and original page citations.
+
 - Filter weekly lab candidates from an explicit local day through Sunday, preserving uncertainty and undated homework.
 
 - Add a partial weekly overview of published lab candidates across selected courses.

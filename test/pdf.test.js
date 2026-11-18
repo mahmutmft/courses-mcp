@@ -12,6 +12,45 @@ const source = `${base}/mod/resource/view.php?id=13`;
 const file = `${base}/pluginfile.php/123/mod_resource/content/1/timetable.pdf`;
 const course = { id: 42, coverage: { partial: false }, sections: [{ resources: [{ name: 'Synthetic timetable', url: source }] }] };
 
+test('54-page PDFs continue with original page citations and unchanged per-call limits', async () => {
+  const bytes = fixturePdf(Array.from({ length: 54 }, (_, i) => `Synthetic slide ${i + 1}`));
+  const first = await extractPdfText(bytes);
+  assert.equal(first.pages.length, 30);
+  assert.equal(first.nextPage, 31);
+  const request = requestFor([{ status: 303, headers: { location: file } }, { body: bytes }]);
+  const second = await readResourceContent({ request, course, resourceId: 13, startPage: first.nextPage });
+  assert.equal(second.pages.length, 24);
+  assert.equal(second.pages[0].pageNumber, 31);
+  assert.match(second.pages[0].text, /Synthetic slide 31/);
+  assert.equal(second.pages.at(-1).pageNumber, 54);
+  assert.equal(second.pages.at(-1).sourceUrl, source);
+  assert.equal(second.nextPage, null);
+  assert.equal(second.status, 'partial');
+  const last = await extractPdfText(bytes, { startPage: 54 });
+  assert.equal(last.pages.length, 1);
+  assert.equal(last.nextPage, null);
+  assert.equal((await extractPdfText(bytes, { startPage: 55 })).errorCode, 'PDF_PAGE_OUT_OF_RANGE');
+});
+
+test('page continuation rejects invalid values and discloses text budget gaps', async () => {
+  for (const startPage of [0, -1, 1.5, '31', Number.MAX_SAFE_INTEGER + 1]) {
+    assert.equal((await extractPdfText(fixturePdf(), { startPage })).errorCode, 'PDF_INVALID_START_PAGE');
+  }
+  const bytes = fixturePdf(['AAAA', 'BBBBBBBB']);
+  const first = await extractPdfText(bytes, { limits: { ...pdfLimits, characters: 7 } });
+  assert.deepEqual(first.partialPages, [2]);
+  assert.equal(first.nextPage, 2);
+  const retry = await extractPdfText(bytes, { startPage: first.nextPage });
+  assert.match(retry.pages[0].text, /BBBBBBBB/);
+  assert.deepEqual(retry.partialPages, []);
+  const clipped = await extractPdfText(bytes, { startPage: 2, limits: { ...pdfLimits, characters: 3 } });
+  assert.deepEqual(clipped.partialPages, [2]);
+  assert.equal(clipped.truncated, true);
+  await assert.rejects(readResourceContent({ request: { get: () => assert.fail('unexpected request') },
+    course: { ...course, sections: [{ resources: [{ url: source.replace('/resource/', '/page/') }] }] },
+    resourceId: 13, startPage: 2 }), /only for PDF/);
+});
+
 test('actual isolated PDF parser extracts page-ordered text and reports blank pages', async () => {
   const result = await extractPdfText(fixturePdf(['Wednesday 10:00 Lab 2', '', 'Friday 12:00 Lab 3']));
   assert.equal(result.errorCode, undefined);

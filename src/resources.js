@@ -71,7 +71,8 @@ export function parseResourceHtml(html, courseId, url, allowed) {
   return { text: text.slice(0, 20000), tables, links: [...links], truncated, target };
 }
 
-export async function readResourceContent({ request, course, resourceId, now = () => new Date().toISOString() }) {
+export async function readResourceContent({ request, course, resourceId, startPage, now = () => new Date().toISOString() }) {
+  if (startPage !== undefined && (!Number.isSafeInteger(startPage) || startPage < 1)) throw new UserError('startPage must be a positive page number.');
   const allowed = new Map();
   for (const resource of course.sections.flatMap(section => section.resources)) {
     const url = moduleUrl(resource.url);
@@ -83,7 +84,7 @@ export async function readResourceContent({ request, course, resourceId, now = (
     checkedAt: now(), status: 'unsupported', text: '', tables: [], links: [], truncated: false,
     coverage: course.coverage, warnings: [], scope: 'Supported Moodle HTML only; no external browsing, forms, PDFs, folders, or timetable inference.' };
   if (new URL(source).pathname === '/mod/resource/view.php') {
-    const pdf = await readPdfResource({ request, source, courseId: course.id });
+    const pdf = await readPdfResource({ request, source, courseId: course.id, startPage });
     result.format = 'pdf';
     result.scope = 'Text from supported Moodle PDFs only; no OCR, semantic table reconstruction, or lab schedule inference.';
     result.pages = (pdf.pages || []).map(page => ({ ...page, sourceUrl: source }));
@@ -91,14 +92,19 @@ export async function readResourceContent({ request, course, resourceId, now = (
     result.truncated = pdf.truncated || false;
     result.emptyPages = pdf.emptyPages || [];
     result.failedPages = pdf.failedPages || [];
+    result.partialPages = pdf.partialPages || [];
+    result.startPage = pdf.startPage ?? startPage ?? 1;
+    result.nextPage = pdf.nextPage ?? null;
     result.text = result.pages.map(page => `[Page ${page.pageNumber}]\n${page.text}`).join('\n\n');
     if (pdf.errorCode) result.warnings.push(pdf.errorCode);
     if (result.emptyPages.length) result.warnings.push('PDF_PAGES_WITHOUT_TEXT');
     if (result.failedPages.length) result.warnings.push('PDF_UNREADABLE_PAGES');
+    if (result.partialPages.length) result.warnings.push('PDF_PAGE_TEXT_LIMIT');
     if (result.truncated) result.warnings.push('PDF_OUTPUT_LIMIT');
     result.status = !result.pages.some(page => page.text.trim()) ? 'unsupported' : result.warnings.length ? 'partial' : 'read';
     return result;
   }
+  if (startPage !== undefined) throw new UserError('startPage is supported only for PDF resources.');
   const visited = new Set();
   let url = source;
   const deadline = Date.now() + 15000;
