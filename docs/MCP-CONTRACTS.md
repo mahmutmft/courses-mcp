@@ -71,3 +71,13 @@ using the existing per-course schedule reader and its request limits.
 The overview remains partial until the recurrence and announcement exception
 pipelines are integrated. All-exempt selections return exempt based on the
 student's local declarations. An empty list is insufficient evidence of no lab.
+
+Optional fromDate selects an inclusive local calendar date within that same week
+through Sunday. Omission preserves the whole-week behavior. The returned range
+states the actual selected days. fromDate includes all times on that day; it is
+not an instant-based filter. Clients should use the user's Europe/Skopje date
+explicitly rather than a server UTC date for remaining-week questions. Invalid
+or out-of-week dates fail before any Moodle read through the tool. Undated
+homework, per-course freshness and warnings remain visible even if all dated
+candidates are filtered out. For example, weekStart=2026-12-28 and
+fromDate=2027-01-01 returns January 1–3, including sessions earlier on January 1.

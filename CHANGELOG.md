@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Filter weekly lab candidates from an explicit local day through Sunday, preserving uncertainty and undated homework.
+
 - Add a partial weekly overview of published lab candidates across selected courses.
 - Inspect and clear a selected course cache through MCP with current enrollment checks.
 
