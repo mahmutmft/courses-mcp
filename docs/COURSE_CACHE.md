@@ -29,3 +29,5 @@ Set MOODLE_CACHE_SEARCH_INDEXES=1 locally to reuse an index after freshly author
 Per-course coverage includes CACHE_INVALIDATION_FAILED if the cached snapshot could not be removed. The response still reflects current Moodle evidence.
 
 Search coverage reports CACHE_READ_FAILED for storage read errors, CACHE_INDEX_INVALID for a matching record whose index cannot be decoded, and CACHE_WRITE_FAILED when the rebuilt index cannot be saved. These warnings describe local storage. The coverage status still reflects live Moodle evidence.
+
+Pass refresh=true to search_courses to rebuild from current Moodle evidence without reading the saved index. With caching enabled, a successful complete rebuild replaces the stored snapshot. The returned indexReused flag is false for that call. Normal search and forced refresh both recheck live access and read selected evidence.
