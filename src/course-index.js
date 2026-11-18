@@ -111,15 +111,20 @@ export function decodeCourseIndex(serialized, courseId) {
       !Array.isArray(index.chunks) || index.chunks.length > maxChunks ||
       !Array.isArray(index.warnings) || !index.warnings.every(value => typeof value === 'string')) return null;
 
+  const allowedFields = (value, fields) => Object.keys(value).every(key => fields.includes(key));
+  const optionalText = value => value === undefined || value === null || typeof value === 'string';
+  if (!allowedFields(index, ['version', 'courseId', 'courseName', 'sources', 'chunks', 'warnings']) ||
+      !optionalText(index.courseName)) return null;
   const urls = new Set();
   for (const source of index.sources) {
-    if (!source || typeof source.url !== 'string' || urls.has(source.url) ||
+    if (!source || !allowedFields(source, ['url', 'status', 'name', 'checkedAt']) ||
+        !optionalText(source.name) || !optionalText(source.checkedAt) || typeof source.url !== 'string' || urls.has(source.url) ||
         !['read', 'partial', 'unsupported'].includes(source.status)) return null;
     urls.add(source.url);
   }
   const ids = new Set();
   for (const chunk of index.chunks) {
-    if (!chunk || typeof chunk.id !== 'string' || !/^[a-f0-9]{64}$/.test(chunk.id) ||
+    if (!chunk || !allowedFields(chunk, ['id', 'url', 'page', 'excerpt', 'tokens']) || typeof chunk.id !== 'string' || !/^[a-f0-9]{64}$/.test(chunk.id) ||
         ids.has(chunk.id) || !urls.has(chunk.url) ||
         (chunk.page !== null && (!Number.isSafeInteger(chunk.page) || chunk.page < 1)) ||
         typeof chunk.excerpt !== 'string' || Array.from(chunk.excerpt).length > chunkSize ||

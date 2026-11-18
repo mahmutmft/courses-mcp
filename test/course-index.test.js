@@ -82,3 +82,24 @@ test('index skips repeated or invalid PDF page references and marks coverage par
   assert.ok(index.warnings.includes('INDEX_INVALID_PAGE_REFERENCE'));
   assert.deepEqual(decodeCourseIndex(JSON.stringify(index), course.id), index);
 });
+
+
+test('cached index schema rejects extra result fields and malformed display metadata', () => {
+  const index = buildCourseIndex(course, [pdf]);
+  const decode = value => decodeCourseIndex(JSON.stringify(value), course.id);
+  for (const mutation of [
+    value => { value.chunks[0].privateNote = 'unexpected local value'; },
+    value => { value.sources[0].name = { text: 'invalid title' }; },
+    value => { value.courseName = ['invalid title']; },
+    value => { value.sources[0].checkedAt = 123; },
+    value => { value.extra = 'unexpected root field'; },
+  ]) {
+    const changed = structuredClone(index);
+    mutation(changed);
+    assert.equal(decode(changed), null);
+  }
+  const legacy = structuredClone(index);
+  delete legacy.courseName;
+  for (const source of legacy.sources) delete source.name;
+  assert.deepEqual(decode(legacy), legacy);
+});
