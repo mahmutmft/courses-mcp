@@ -21,6 +21,11 @@ const server = new McpServer({ name: 'finki-courses', version: packageInfo.versi
 });
 const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true };
 const courseId = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
+register('get_course_cache', 'Inspect local cache size and write timestamp for one currently enrolled course. Returns metadata only and whether search caching is enabled.',
+  { courseId }, ({ courseId }) => moodle.manageCourseCache(courseId));
+register('clear_course_cache', 'Delete the local cached index for one currently enrolled course only after an explicit user request. Preserves lab preferences and Moodle content.',
+  { courseId }, ({ courseId }) => moodle.manageCourseCache(courseId, true),
+  { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false });
 register('get_lab_timetable', 'Extract conservative lab timetable candidates from one currently discovered supported Moodle HTML/text-PDF resource. Returns group, day/time/room, explicit dates/effective periods, timezone and table-row/PDF-page provenance. Missing/conflicting fields and overlapping versions remain explicit. All groups are returned. Optional occurrenceRange expands explicit dates and bounded recurring rules into local timetable candidates. Optional announcementForumId checks explicit lab changes in one discovered news forum when a range is provided. No roster inference or confirmed personal attendance.',
   {
     courseId,

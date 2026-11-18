@@ -30,4 +30,15 @@ Per-course coverage includes CACHE_INVALIDATION_FAILED if the cached snapshot co
 
 Search coverage reports CACHE_READ_FAILED for storage read errors, CACHE_INDEX_INVALID for a matching record whose index cannot be decoded, and CACHE_WRITE_FAILED when the rebuilt index cannot be saved. These warnings describe local storage. The coverage status still reflects live Moodle evidence.
 
+## Manage a course cache through MCP
+
+Use get_course_cache(courseId) to inspect the stored record's size and timestamp.
+The result includes enabled and a stored/empty status, with no cached text or
+local path. The stored status describes presence, including expired records.
+
+Use clear_course_cache(courseId) after an explicit request to clear a course's
+local index. It can remove a malformed record and repeated calls are safe.
+Both tools check current enrollment and remain available when search caching
+is switched off. Lab preferences are stored separately.
+
 Pass refresh=true to search_courses to rebuild from current Moodle evidence without reading the saved index. With caching enabled, a successful complete rebuild replaces the stored snapshot. The returned indexReused flag is false for that call. Normal search and forced refresh both recheck live access and read selected evidence.

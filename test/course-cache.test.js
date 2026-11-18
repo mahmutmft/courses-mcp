@@ -1,3 +1,4 @@
+import { Moodle } from '../src/moodle.js';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { mkdtemp, rm, writeFile, symlink, unlink } from 'node:fs/promises';
@@ -73,4 +74,35 @@ test('account quota allows replacements and reuses a slot after deletion', async
   await store.delete(2);
   await store.set(33, record);
   assert.equal((await store.get(33)).content, 'text');
+});
+
+
+test('Moodle cache management verifies enrollment and permits cleanup with caching off', async t => {
+  const temp = await mkdtemp(join(tmpdir(), 'finki-cache-management-'));
+  t.after(() => rm(temp, { recursive: true }));
+  const key = process.platform === 'win32' ? 'LOCALAPPDATA' : 'XDG_DATA_HOME';
+  const previous = process.env[key];
+  process.env[key] = temp;
+  t.after(() => {
+    if (previous === undefined) delete process.env[key];
+    else process.env[key] = previous;
+  });
+  const config = { baseUrl: 'https://courses.finki.ukim.mk', username: 'fixture', cacheSearchIndexes: false };
+  const store = new CourseCache(config, { enabled: true, authorize: async () => true });
+  await store.set(42, { content: 'private content', index: 'private index' });
+  const moodle = new Moodle(config);
+  let enrolled = true;
+  moodle.listCourses = async () => ({ courses: enrolled ? [{ id: 42 }] : [] });
+  const inspected = await moodle.manageCourseCache(42);
+  assert.equal(inspected.status, 'stored');
+  assert.equal(inspected.enabled, false);
+  assert.ok(inspected.record.bytes > 0);
+  assert.doesNotMatch(JSON.stringify(inspected), /private content|private index|AppData/);
+  enrolled = false;
+  await assert.rejects(moodle.manageCourseCache(42, true), /not in your enrolled/);
+  assert.ok(await store.get(42));
+  enrolled = true;
+  assert.equal((await moodle.manageCourseCache(42, true)).status, 'cleared');
+  assert.equal((await moodle.manageCourseCache(42)).status, 'empty');
+  assert.equal((await moodle.manageCourseCache(42, true)).status, 'cleared');
 });
