@@ -99,8 +99,8 @@ register('set_lab_preference', 'Save an explicit user-requested local lab attend
 register('list_courses', 'List enrolled Moodle courses, optionally filtered by explicit academic year and winter/summer semester. Filters use course-name labels; unresolved labels are reported in unclassifiedCount. Without filters returns all enrollments.', courseFilters,
   async args => filterCourseList(await moodle.listCourses(), args));
 register('get_course', 'Browse an enrolled course main page and discovered section pages. Returns deduplicated resources and coverage warnings for unavailable pages or limits. Does not expand folders or files.', { courseId }, args => moodle.getCourse(args.courseId));
-register('read_resource', 'Read supported Moodle HTML or page-numbered PDF text from a discovered resource. resourceId is the numeric course-module id in its source URL. Returns provenance and read/partial/unsupported status. No external origins, OCR, forms, or lab schedule inference.', { courseId, resourceId: courseId },
-  args => moodle.readResource(args.courseId, args.resourceId));
+register('read_resource', 'Read supported Moodle HTML or page-numbered PDF text from a discovered resource. resourceId is the numeric course-module id in its source URL. For PDF only, optional startPage (1-based) reads a bounded batch starting there; follow nextPage until null to inspect later pages. partialPages and failedPages remain incomplete even when nextPage is null. Returns provenance and read/partial/unsupported status. No external origins, OCR, forms, or lab schedule inference.', { courseId, resourceId: courseId, startPage: courseId.optional() },
+  args => moodle.readResource(args.courseId, args.resourceId, args.startPage));
 register('search_courses', 'Search visible text across up to four explicitly selected enrolled courses. Optionally read up to three explicitly discovered HTML/PDF resources. Returns ranked snippets, page citations and per-course coverage. Set refresh=true to rebuild the index from current evidence.',
   {
     courseIds: z.array(courseId).min(1).max(4),

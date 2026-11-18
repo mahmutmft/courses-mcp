@@ -14,7 +14,7 @@ export function moodlePdfUrl(value, relativeTo) {
   } catch { return null; }
 }
 
-export async function readPdfResource({ request, source, courseId, extract = extractPdfText }) {
+export async function readPdfResource({ request, source, courseId, startPage = 1, extract = extractPdfText }) {
   let url = source;
   let filePath;
   const seen = new Set();
@@ -41,7 +41,7 @@ export async function readPdfResource({ request, source, courseId, extract = ext
         if (!isPdf && !/^text\/html(?:;|$)/i.test(type)) return fail('PDF_UNSUPPORTED_CONTENT_TYPE');
         const body = await response.body();
         if (body.byteLength > limit) return fail('PDF_SIZE_LIMIT');
-        if (isPdf) return await extract(body);
+        if (isPdf) return await extract(body, { startPage });
         // Only the original authorized module wrapper may introduce a file URL.
         if (url !== source) return fail('PDF_LOGIN_OR_NON_PDF_RESPONSE');
         const $ = load(body.toString('utf8'));

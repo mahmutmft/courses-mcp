@@ -126,3 +126,10 @@ test('Moodle integration uses authorized course discovery for each resource read
   assert.equal((await moodle.readResource(42, 11)).status, 'read');
   assert.equal(checked, 42);
 });
+
+test('PDF continuation cannot bypass revoked course access', async () => {
+  const moodle = new Moodle({});
+  moodle.getCourse = async () => { throw new Error('Course is not in your enrolled course list.'); };
+  moodle.page = { context: () => assert.fail('request access before authorization') };
+  await assert.rejects(moodle.readResource(42, 13, 31), /not in your enrolled/);
+});

@@ -286,9 +286,9 @@ export class Moodle {
       scope: 'Live index of visible section text and explicitly selected supported HTML/PDF resources. Other documents and folders are outside this search.' };
   }
 
-  async readResource(courseId, resourceId) {
+  async readResource(courseId, resourceId, startPage) {
     const course = await this.getCourse(courseId);
-    return readResourceContent({ request: this.page.context().request, course, resourceId });
+    return readResourceContent({ request: this.page.context().request, course, resourceId, startPage });
   }
 
   async getLabTimetable(courseId, resourceId) {

@@ -18,6 +18,11 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
   try {
     await client.connect(transport);
     assert.equal(client.getServerVersion()?.version, packageInfo.version);
+    for (const startPage of [0, -1, 1.5, '31']) {
+      const invalid = await client.callTool({ name: 'read_resource', arguments: { courseId: 42, resourceId: 13, startPage } });
+      assert.equal(invalid.isError, true);
+      assert.doesNotMatch(invalid.content[0].text, /Fill MOODLE_USERNAME/);
+    }
     for (const fromDate of ['2026-12-27', '2027-01-04', '2026-02-30']) {
       const invalid = await client.callTool({ name: 'get_weekly_labs', arguments: {
         courseIds: [42], weekStart: '2026-12-28', fromDate,
