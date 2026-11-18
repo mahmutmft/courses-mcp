@@ -5,6 +5,8 @@ The server uses stdio. Restart the client connection after updating the checkout
 | Tool | Inputs | Result |
 | --- | --- | --- |
 | list_courses | Optional academicYear and semester (winter or summer) | Enrolled courses, label classification and truncation |
+| get_course_cache | courseId | Local cache size and write timestamp, with enrollment verification |
+| clear_course_cache | courseId | Explicit local deletion of the selected course cache |
 | get_course | courseId | Sections, discovered resources and traversal coverage |
 | search_course | courseId, query, optional limit | Matches in visible section and activity text |
 | search_courses | courseIds (1–4), query, optional limit (1–30), optional documents (up to 3 courseId/resourceId pairs) | Ranked live index snippets with source/page citations and per-course coverage |

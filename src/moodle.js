@@ -192,6 +192,30 @@ export class Moodle {
       readPage: (url, timeout) => readCoursePage(this.page.context().request, url, id, MOODLE, timeout) });
   }
 
+  async manageCourseCache(courseId, clear = false) {
+    const { courses } = await this.listCourses();
+    if (!courses.some(course => course.id === courseId)) {
+      throw new UserError('Course is not in your enrolled course list.');
+    }
+    // Management is available even when caching has been switched off.
+    const cache = new CourseCache(this.config, {
+      enabled: true,
+      authorize: async id => id === courseId && courses.some(course => course.id === id),
+    });
+    try {
+      if (clear) {
+        await cache.delete(courseId);
+        return { courseId, status: 'cleared' };
+      }
+      const record = await cache.inspect(courseId);
+      return { courseId, enabled: Boolean(this.config.cacheSearchIndexes),
+        status: record ? 'stored' : 'empty', record };
+    } catch (error) {
+      if (error instanceof UserError) throw error;
+      throw new UserError('Local course cache could not be accessed (CACHE_MANAGEMENT_FAILED).');
+    }
+  }
+
   async searchCourses(courseIds, query, limit, documents = [], refresh = false) {
     const { courses } = await this.listCourses();
     const selected = [...new Set(courseIds)];

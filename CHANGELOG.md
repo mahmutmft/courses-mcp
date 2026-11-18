@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Add a partial weekly overview of published lab candidates across selected courses.
+- Inspect and clear a selected course cache through MCP with current enrollment checks.
 
 - Allow cross-course search to explicitly rebuild its index with refresh=true.
 
