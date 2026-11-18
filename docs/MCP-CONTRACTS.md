@@ -54,3 +54,5 @@ See [Moodle reader budgets](READER_BUDGETS.md) for request, processing and buffe
 Cross-course hits include courseName and sourceName where the reader supplied titles. Section snippets may have a null sourceName.
 
 For search_courses, truncated is true when ranked matches exceed the requested result limit. Course coverage separately reports how much evidence could be indexed.
+
+search_courses returns status=read when all selected evidence was read within the supported scope, or partial when coverage is incomplete. matchStatus is found when at least one indexed snippet matches, no_match when complete selected evidence has no hits, and unknown when incomplete evidence has no hits. Unselected files remain outside the stated scope.

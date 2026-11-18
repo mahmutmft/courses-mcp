@@ -254,7 +254,10 @@ export class Moodle {
       checkedAt, indexReused: Boolean(reused), sources: index.sources, warnings: [...index.warnings, ...warnings], unavailableResourceIds: unavailable });
     }
     const ranked = rankCourseIndexes(indexes, query, limit + 1);
-    return { matches: ranked.slice(0, limit), truncated: ranked.length > limit, coverage,
+    const complete = coverage.every(course => course.status === 'read');
+    const status = complete ? 'read' : 'partial';
+    const matchStatus = ranked.length ? 'found' : complete ? 'no_match' : 'unknown';
+    return { status, matchStatus, matches: ranked.slice(0, limit), truncated: ranked.length > limit, coverage,
       scope: 'Live index of visible section text and explicitly selected supported HTML/PDF resources. Other documents and folders are outside this search.' };
   }
 

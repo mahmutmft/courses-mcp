@@ -242,6 +242,8 @@ test('search reuses the index only for unchanged, currently readable evidence', 
   failedDelete.mock.restore();
   const denied = await search();
   assert.equal(denied.coverage[0].status, 'unavailable');
+  assert.equal(denied.status, 'partial');
+  assert.equal(denied.matchStatus, 'unknown');
   assert.deepEqual(denied.matches, []);
   readable = true;
   assert.equal((await search()).coverage[0].indexReused, false);
@@ -258,9 +260,31 @@ test('cross-course search distinguishes capped hits from complete results', asyn
   const full = await moodle.searchCourses([42], 'searchable', 30);
   assert.equal(capped.matches.length, 1);
   assert.equal(capped.truncated, true);
+  assert.equal(capped.status, 'read');
+  assert.equal(capped.matchStatus, 'found');
   assert.equal(full.truncated, false);
   assert.deepEqual(capped.matches.map(hit => hit.id), full.matches.slice(0, 1).map(hit => hit.id));
   const empty = await moodle.searchCourses([42], 'unmatchedword', 1);
   assert.deepEqual(empty.matches, []);
   assert.equal(empty.truncated, false);
+  assert.equal(empty.status, 'read');
+  assert.equal(empty.matchStatus, 'no_match');
+});
+
+
+test('search retains valid hits while reporting an unavailable selected course', async () => {
+  const moodle = new Moodle({});
+  moodle.listCourses = async () => ({ courses: [{ id: 42 }, { id: 43 }] });
+  moodle.page = { context: () => ({ request: {
+    get: async url => response({
+      status: url.includes('id=43') ? 403 : 200,
+      html: page(block(101, 1, 'Searchable', 1)),
+    }),
+  } }) };
+  const result = await moodle.searchCourses([42, 43], 'Searchable', 10);
+  assert.equal(result.status, 'partial');
+  assert.equal(result.matchStatus, 'found');
+  assert.ok(result.matches.length > 0);
+  assert.ok(result.matches.every(hit => hit.courseId === 42));
+  assert.equal(result.coverage.find(course => course.courseId === 43).status, 'unavailable');
 });
