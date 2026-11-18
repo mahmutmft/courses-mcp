@@ -19,7 +19,7 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
     await client.connect(transport);
     assert.equal(client.getServerVersion()?.version, packageInfo.version);
     const { tools } = await client.listTools();
-    assert.deepEqual(tools.map(tool => tool.name).sort(), ['get_announcements', 'get_assignment', 'get_choice_selection', 'get_course', 'get_coursework_deadlines', 'get_folder', 'get_lab_preference', 'get_lab_schedule', 'get_lab_term_preference', 'get_lab_timetable', 'get_quiz', 'list_courses', 'read_folder_file', 'read_resource', 'search_course', 'search_courses', 'set_lab_preference', 'set_lab_term_preference']);
+    assert.deepEqual(tools.map(tool => tool.name).sort(), ['clear_course_cache', 'get_announcements', 'get_assignment', 'get_choice_selection', 'get_course', 'get_course_cache', 'get_coursework_deadlines', 'get_folder', 'get_lab_preference', 'get_lab_schedule', 'get_lab_term_preference', 'get_lab_timetable', 'get_quiz', 'list_courses', 'read_folder_file', 'read_resource', 'search_course', 'search_courses', 'set_lab_preference', 'set_lab_term_preference']);
     for (const arguments_ of [
       { courseIds: Array.from({ length: 11 }, (_, i) => i + 1), range: { from: '2026-11-01', through: '2026-11-02' } },
       { courseIds: [42], range: { from: '2026-11-01', through: '2026-12-02' } },
@@ -33,7 +33,15 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
       assert.equal(invalidWeek.isError, true);
       assert.doesNotMatch(invalidWeek.content[0].text, /Fill MOODLE_USERNAME/);
     }
-    assert.ok(tools.filter(tool => !['set_lab_preference', 'set_lab_term_preference'].includes(tool.name)).every(tool => tool.annotations.readOnlyHint));
+    assert.ok(tools.filter(tool => !['clear_course_cache', 'set_lab_preference', 'set_lab_term_preference'].includes(tool.name)).every(tool => tool.annotations.readOnlyHint));
+    const clearer = tools.find(tool => tool.name === 'clear_course_cache');
+    assert.equal(clearer.annotations.readOnlyHint, false);
+    assert.equal(clearer.annotations.destructiveHint, true);
+    for (const name of ['get_course_cache', 'clear_course_cache']) {
+      const invalid = await client.callTool({ name, arguments: { courseId: -1 } });
+      assert.equal(invalid.isError, true);
+      assert.doesNotMatch(invalid.content[0].text, /Fill MOODLE_USERNAME/);
+    }
     const termSetter = tools.find(tool => tool.name === 'set_lab_term_preference');
     assert.equal(termSetter.annotations.readOnlyHint, false);
     assert.equal(termSetter.annotations.openWorldHint, false);
