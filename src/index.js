@@ -10,6 +10,7 @@ import { searchCourse } from './content.js';
 import { courseFilters, filterCourseList } from './courses.js';
 import { attendanceStates } from './preferences.js';
 import { isMonday } from './labs.js';
+import { isWeeklyLabRange } from './weekly-labs.js';
 import { labTermSchema } from './lab-terms.js';
 
 import packageInfo from '../package.json' with { type: 'json' };
@@ -69,10 +70,14 @@ register('get_quiz', 'Read the published description and opening/closing dates o
   { courseId, quizId: courseId }, args => moodle.getQuiz(args.courseId, args.quizId));
 register('get_assignment', 'Read a discovered enrolled-course assignment description and published opening/due/cutoff fields with source and freshness. Unknown timezone or unsupported dates remain explicit. No submissions, grades, attachments or forms. Due dates are submission deadlines, not lab presentation times.',
   { courseId, assignmentId: courseId }, args => moodle.getAssignment(args.courseId, args.assignmentId));
-register('get_weekly_labs', 'Collect published lab candidates and separately listed undated homework for one explicit Monday-start week across up to four selected enrolled courses. Applies local exemptions. Results remain partial while recurring schedules and cancellations are unchecked.',
+register('get_weekly_labs', 'Collect published lab candidates and separately listed undated homework for one explicit Monday-start week across up to four selected enrolled courses. Optional fromDate selects that whole local day through Sunday (Europe/Skopje), not only future hours. Supply the explicit local date for remaining-week questions. Applies local exemptions. Results remain partial while recurring schedules and cancellations are unchecked.',
   { courseIds: z.array(courseId).min(1).max(4),
-    weekStart: z.string().refine(isMonday, 'Use a valid Monday in YYYY-MM-DD format.') },
-  ({ courseIds, weekStart }) => moodle.getWeeklyLabs(courseIds, weekStart));
+    weekStart: z.string().refine(isMonday, 'Use a valid Monday in YYYY-MM-DD format.'),
+    fromDate: z.string().optional() },
+  ({ courseIds, weekStart, fromDate }) => {
+    if (!isWeeklyLabRange(weekStart, fromDate)) throw new UserError('fromDate must be a valid date within the selected Monday–Sunday week.');
+    return moodle.getWeeklyLabs(courseIds, weekStart, fromDate);
+  });
 register('get_lab_schedule', 'Connect discovered group-specific lab homework to your saved presentation term for an explicit Monday-start week in Europe/Skopje. Enrich matching assignment homework with bounded descriptions and published dates; deadlines never become presentation times or prove weekly attendance. Returns published dated matches and undated term-linked homework separately. Applies local exemptions. Announcements/cancellations remain unchecked; empty means unknown, not no labs.',
   { courseId, weekStart: z.string().refine(isMonday, 'Use a valid Monday in YYYY-MM-DD format.') },
   args => moodle.getLabSchedule(args.courseId, args.weekStart));

@@ -3,6 +3,41 @@ import assert from 'node:assert/strict';
 import { collectWeeklyLabs } from '../src/weekly-labs.js';
 import { Moodle } from '../src/moodle.js';
 
+test('remaining week includes the entire selected day, preserves uncertainty and undated work', async () => {
+  const dates = ['2026-12-28', '2026-12-30', '2027-01-03', '2027-01-04'];
+  const result = await collectWeeklyLabs({ courseIds: [1], weekStart: '2026-12-28', fromDate: '2026-12-30',
+    readSchedule: async () => schedule('partial', dates.map(date => ({ date, startTime: '08:00',
+      sources: [{ url: 'https://example.test/lab' }] }))) });
+  assert.deepEqual(result.occurrences.map(item => item.date), ['2026-12-30', '2027-01-03']);
+  assert.deepEqual(result.range, { from: '2026-12-30', through: '2027-01-03' });
+  assert.equal(result.status, 'partial');
+  assert.equal(result.courses[0].termLinkedHomework[0].date, null);
+  assert.deepEqual(result.courses[0].warnings, ['ANNOUNCEMENTS_AND_CANCELLATIONS_UNCHECKED']);
+});
+
+test('remaining week validates dates before reads and handles DST Sunday without UTC drift', async () => {
+  for (const fromDate of ['2026-03-22', '2026-03-30', '2026-02-30', 'today', null]) {
+    await assert.rejects(collectWeeklyLabs({ courseIds: [1], weekStart: '2026-03-23', fromDate,
+      readSchedule: () => assert.fail('unexpected read') }), /fromDate/);
+  }
+  const result = await collectWeeklyLabs({ courseIds: [1], weekStart: '2026-03-23', fromDate: '2026-03-29',
+    readSchedule: async () => schedule('partial', [{ date: '2026-03-28' }, { date: '2026-03-29', endTime: null }]) });
+  assert.deepEqual(result.range, { from: '2026-03-29', through: '2026-03-29' });
+  assert.equal(result.occurrences.length, 1);
+  assert.equal(result.occurrences[0].endTime, null);
+});
+
+test('Moodle weekly adapter forwards the selected remaining-week date after authorization', async () => {
+  const calls = [];
+  const result = await Moodle.prototype.getWeeklyLabs.call({
+    listCourses: async () => ({ courses: [{ id: 1 }] }),
+    getLabSchedule: async (...args) => { calls.push(args); return schedule('unknown'); },
+  }, [1], '2026-12-28', '2027-01-01');
+  assert.deepEqual(calls, [[1, '2026-12-28']]);
+  assert.equal(result.range.from, '2027-01-01');
+  assert.equal(result.status, 'partial');
+});
+
 const weekStart = '2026-12-28';
 const checkedAt = '2026-12-27T12:00:00Z';
 const schedule = (status, datedOccurrences = []) => ({ status, checkedAt,
