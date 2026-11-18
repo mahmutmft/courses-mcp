@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a partial weekly overview of published lab candidates across selected courses.
+
 - Allow cross-course search to explicitly rebuild its index with refresh=true.
 
 - Read enrolled Moodle courses, materials, saved choices, assignment and quiz dates, and announcement posts.
