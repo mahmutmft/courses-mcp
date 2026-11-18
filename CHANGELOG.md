@@ -4,6 +4,8 @@
 
 - Inspect and clear a selected course cache through MCP with current enrollment checks.
 
+- Allow cross-course search to explicitly rebuild its index with refresh=true.
+
 - Read enrolled Moodle courses, materials, saved choices, assignment and quiz dates, and announcement posts.
 - Expand supported lab timetable dates and retain evidence for explicit cancellations or moves.
 - Report published coursework dates across selected courses.

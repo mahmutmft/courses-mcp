@@ -40,3 +40,5 @@ Use clear_course_cache(courseId) after an explicit request to clear a course's
 local index. It can remove a malformed record and repeated calls are safe.
 Both tools check current enrollment and remain available when search caching
 is switched off. Lab preferences are stored separately.
+
+Pass refresh=true to search_courses to rebuild from current Moodle evidence without reading the saved index. With caching enabled, a successful complete rebuild replaces the stored snapshot. The returned indexReused flag is false for that call. Normal search and forced refresh both recheck live access and read selected evidence.

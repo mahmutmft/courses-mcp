@@ -213,6 +213,14 @@ test('search reuses the index only for unchanged, currently readable evidence', 
   const search = () => moodle.searchCourses([42], 'originalword', 10);
   assert.equal((await search()).coverage[0].indexReused, false);
   assert.equal((await search()).coverage[0].indexReused, true);
+  const cacheRead = t.mock.method(CourseCache.prototype, 'get');
+  const refreshed = await moodle.searchCourses([42], 'originalword', 10, [], true);
+  assert.equal(refreshed.coverage[0].indexReused, false);
+  assert.ok(refreshed.matches.length > 0);
+  assert.equal(cacheRead.mock.callCount(), 0);
+  cacheRead.mock.restore();
+  assert.equal((await search()).coverage[0].indexReused, true);
+
   label = 'replacementword';
   const changed = await search();
   assert.equal(changed.coverage[0].indexReused, false);

@@ -215,7 +215,7 @@ export class Moodle {
     }
   }
 
-  async searchCourses(courseIds, query, limit, documents = []) {
+  async searchCourses(courseIds, query, limit, documents = [], refresh = false) {
     const { courses } = await this.listCourses();
     const selected = [...new Set(courseIds)];
     if (selected.some(id => !courses.some(course => course.id === id))) {
@@ -257,7 +257,7 @@ export class Moodle {
         ? createHash('sha256').update(JSON.stringify([2, course, resources.map(({ checkedAt, ...resource }) => resource)])).digest('hex')
         : null;
       if (!fingerprint) await invalidate();
-      const cached = fingerprint ? await cache.get(courseId).catch(() => {
+      const cached = fingerprint && !refresh ? await cache.get(courseId).catch(() => {
         warnings.push('CACHE_READ_FAILED');
         return null;
       }) : null;
