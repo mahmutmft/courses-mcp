@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Validate reused search indexes against current source/page citations and excerpt-derived tokens; rebuild inconsistent snapshots from live evidence.
+
 - Report local cache freshness explicitly and reject noncanonical cache timestamps; verify quota contention and interrupted-writer recovery.
 
 - Add npm run setup for guided dependency/browser installation, local startup checks and copyable MCP client configuration without overwriting .env.

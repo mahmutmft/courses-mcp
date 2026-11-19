@@ -103,3 +103,69 @@ test('cached index schema rejects extra result fields and malformed display meta
   for (const source of legacy.sources) delete source.name;
   assert.deepEqual(decode(legacy), legacy);
 });
+
+test('cached tokens must be exactly derived from the cited excerpt', () => {
+  const index = buildCourseIndex(course, [pdf]);
+  for (const mutation of [
+    value => { value.chunks[0].tokens.push('invented'); },
+    value => { value.chunks[0].tokens.reverse(); },
+    value => { value.chunks[0].tokens = []; },
+    value => { value.chunks[0].excerpt = 'unrelated replacement'; },
+    value => { value.sources[0].status = 'unsupported'; },
+  ]) {
+    const changed = structuredClone(index);
+    mutation(changed);
+    assert.equal(decodeCourseIndex(JSON.stringify(changed), course.id), null);
+  }
+});
+
+test('cached citations must belong to the caller fresh authorized source set', () => {
+  const index = buildCourseIndex(course, [pdf]);
+  const allowed = new Set(index.sources.map(source => source.url));
+  assert.deepEqual(decodeCourseIndex(JSON.stringify(index), course.id, allowed), index);
+  const changed = structuredClone(index);
+  const oldUrl = changed.sources[1].url;
+  changed.sources[1].url = 'https://unverified.example/private.pdf';
+  for (const chunk of changed.chunks) if (chunk.url === oldUrl) chunk.url = changed.sources[1].url;
+  assert.equal(decodeCourseIndex(JSON.stringify(changed), course.id, allowed), null);
+  allowed.delete(pdf.sourceUrl);
+  assert.equal(decodeCourseIndex(JSON.stringify(index), course.id, allowed), null);
+});
+
+test('HTML tables and MK/EN text keep stable source/page identities across rebuilds', () => {
+  const html = { courseId: course.id, sourceUrl: '/mod/page/view.php?id=8', status: 'read', checkedAt: pdf.checkedAt,
+    text: 'Група А\tMonday\t14:00\nGroup B\tTuesday\t16:00', tables: [{ rows: [['Group', 'Day']] }] };
+  const index = buildCourseIndex(course, [html, { ...pdf, status: 'unsupported', pages: [] }]);
+  assert.deepEqual(index, buildCourseIndex(course, [html, html, { ...pdf, status: 'unsupported', pages: [] }]));
+  assert.equal(rankCourseIndexes([index], 'ГРУПА', 1)[0].url, html.sourceUrl);
+  assert.equal(rankCourseIndexes([index], 'Tuesday', 1)[0].page, null);
+  assert.ok(!index.chunks.some(chunk => chunk.url === pdf.sourceUrl));
+  assert.deepEqual(decodeCourseIndex(JSON.stringify(index), course.id), index);
+});
+
+test('cached page numbers must have been observed by the current authorized reader', () => {
+  const index = buildCourseIndex(course, [pdf]);
+  const urls = new Set(index.sources.map(source => source.url));
+  const citations = new Set(index.chunks.map(chunk => JSON.stringify([chunk.url, chunk.page])));
+  assert.ok(decodeCourseIndex(JSON.stringify(index), course.id, urls, citations));
+  index.chunks.find(chunk => chunk.page === 2).page = 999;
+  assert.equal(decodeCourseIndex(JSON.stringify(index), course.id, urls, citations), null);
+});
+
+test('global text cuts never leave an excerpt token absent from its searchable tokens', () => {
+  const text = 'a'.repeat(191980) + ' validword truncatedlongword';
+  const index = buildCourseIndex(course, [{ ...pdf, pages: [{ pageNumber: 2, text }] }]);
+  assert.ok(index.warnings.includes('INDEX_TEXT_LIMIT'));
+  assert.equal(rankCourseIndexes([index], 'validword', 1)[0].page, 2);
+  assert.deepEqual(decodeCourseIndex(JSON.stringify(index), course.id), index);
+});
+
+test('source limits disclose omitted selected documents without exceeding index bounds', () => {
+  const resources = Array.from({ length: 40 }, (_, i) => ({ ...pdf,
+    sourceUrl: `/mod/resource/view.php?id=${i + 1}`, status: 'read' }));
+  const index = buildCourseIndex(course, resources);
+  assert.equal(index.sources.length, 32);
+  assert.ok(index.chunks.length <= 96);
+  assert.ok(index.warnings.includes('INDEX_SOURCE_LIMIT'));
+  assert.deepEqual(decodeCourseIndex(JSON.stringify(index), course.id), index);
+});

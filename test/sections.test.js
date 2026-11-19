@@ -213,6 +213,27 @@ test('search reuses the index only for unchanged, currently readable evidence', 
   const search = () => moodle.searchCourses([42], 'originalword', 10);
   assert.equal((await search()).coverage[0].indexReused, false);
   assert.equal((await search()).coverage[0].indexReused, true);
+  const storedCache = new CourseCache(moodle.config, { enabled: true, authorize: async () => true });
+  for (const corrupt of [
+    index => { index.chunks[0].tokens.push('inventedmatch'); },
+    index => {
+      const original = index.sources[0].url;
+      index.sources[0].url = 'https://unverified.example/resource';
+      for (const chunk of index.chunks) if (chunk.url === original) chunk.url = index.sources[0].url;
+    },
+    index => { index.chunks[0].page = 999; },
+  ]) {
+    const record = await storedCache.get(42);
+    const index = JSON.parse(record.index);
+    corrupt(index);
+    await storedCache.set(42, { content: record.content, index: JSON.stringify(index) });
+    const rebuilt = await search();
+    assert.equal(rebuilt.coverage[0].indexReused, false);
+    assert.ok(rebuilt.coverage[0].warnings.includes('CACHE_INDEX_INVALID'));
+    assert.ok(rebuilt.matches.length > 0);
+    assert.doesNotMatch(JSON.stringify(rebuilt), /unverified.example|inventedmatch/);
+    assert.equal((await search()).coverage[0].indexReused, true);
+  }
   const cacheRead = t.mock.method(CourseCache.prototype, 'get');
   const refreshed = await moodle.searchCourses([42], 'originalword', 10, [], true);
   assert.equal(refreshed.coverage[0].indexReused, false);

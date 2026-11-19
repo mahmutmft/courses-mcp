@@ -59,7 +59,7 @@ export function buildCourseIndex(course, resources) {
         const tokens = [...new Set(tokenize(completeText))];
         if (!tokens.length) continue;
         const id = createHash('sha256').update(JSON.stringify([course.id, source.url, page, offset])).digest('hex');
-        chunks.push({ id, url: source.url, page, excerpt, tokens });
+        chunks.push({ id, url: source.url, page, excerpt: completeText, tokens });
       }
     }
   }
@@ -102,7 +102,7 @@ export function rankCourseIndexes(indexes, query, limit) {
 }
 
 /** Decode an index only after its cache record has passed current access checks. */
-export function decodeCourseIndex(serialized, courseId) {
+export function decodeCourseIndex(serialized, courseId, expectedSourceUrls, expectedCitations) {
   if (typeof serialized !== 'string' || Buffer.byteLength(serialized) > 1024 * 1024) return null;
   let index;
   try { index = JSON.parse(serialized); } catch { return null; }
@@ -119,6 +119,7 @@ export function decodeCourseIndex(serialized, courseId) {
   for (const source of index.sources) {
     if (!source || !allowedFields(source, ['url', 'status', 'name', 'checkedAt']) ||
         !optionalText(source.name) || !optionalText(source.checkedAt) || typeof source.url !== 'string' || urls.has(source.url) ||
+        (expectedSourceUrls && !expectedSourceUrls.has(source.url)) ||
         !['read', 'partial', 'unsupported'].includes(source.status)) return null;
     urls.add(source.url);
   }
@@ -126,11 +127,17 @@ export function decodeCourseIndex(serialized, courseId) {
   for (const chunk of index.chunks) {
     if (!chunk || !allowedFields(chunk, ['id', 'url', 'page', 'excerpt', 'tokens']) || typeof chunk.id !== 'string' || !/^[a-f0-9]{64}$/.test(chunk.id) ||
         ids.has(chunk.id) || !urls.has(chunk.url) ||
+        (expectedCitations && !expectedCitations.has(JSON.stringify([chunk.url, chunk.page]))) ||
         (chunk.page !== null && (!Number.isSafeInteger(chunk.page) || chunk.page < 1)) ||
         typeof chunk.excerpt !== 'string' || Array.from(chunk.excerpt).length > chunkSize ||
         !Array.isArray(chunk.tokens) || chunk.tokens.length > chunkSize ||
         !chunk.tokens.every(token => typeof token === 'string' && token.length > 0)) return null;
     ids.add(chunk.id);
+    const source = index.sources.find(item => item.url === chunk.url);
+    if (source.status === 'unsupported') return null;
+    const expectedTokens = [...new Set(tokenize(chunk.excerpt))];
+    if (expectedTokens.length !== chunk.tokens.length ||
+        expectedTokens.some((token, position) => token !== chunk.tokens[position])) return null;
   }
   return index;
 }
