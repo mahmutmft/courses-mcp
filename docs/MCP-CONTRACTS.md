@@ -1,5 +1,14 @@
 # MCP tool contracts
 
+## Cache inspection freshness
+
+get_course_cache retains stored/empty presence status. A present record additionally
+includes record.freshness: fresh (age under seven days), expired (seven days or
+more), future (timestamp after the local clock), or unknown (unverifiable clock).
+This is local storage age, not live Moodle evidence freshness. Only fresh snapshots
+can be considered for reuse after live authorization and fingerprint checks.
+Inspect does not return cached content; clearing still requires an explicit request.
+
 ## PDF resource continuation
 
 read_resource accepts optional startPage (positive, 1-based, PDF resources only).
