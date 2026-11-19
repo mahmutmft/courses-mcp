@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add npm run setup for guided dependency/browser installation, local startup checks and copyable MCP client configuration without overwriting .env.
+
 - Continue PDF resource reads with startPage and nextPage while preserving per-call limits and original page citations.
 
 - Filter weekly lab candidates from an explicit local day through Sunday, preserving uncertainty and undated homework.

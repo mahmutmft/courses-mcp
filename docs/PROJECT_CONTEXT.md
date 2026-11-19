@@ -30,6 +30,12 @@ Node.js >=24, JavaScript ES modules, npm lockfile. The official MCP SDK v1 handl
 
 From the repository root in PowerShell:
 
+For guided student setup, run `npm run setup` before installing dependencies. It
+installs locked dependencies and Chromium, checks local browser/MCP startup without
+signing in, exclusively creates a blank .env if missing, and prints client JSON.
+It never edits client settings or private preferences. Keep the manual path below
+for contributors and recovery; see docs/SETUP_CHECKLIST.md for limits and evidence.
+
 ~~~powershell
 npm ci
 npm run browser:install
