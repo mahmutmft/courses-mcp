@@ -262,7 +262,17 @@ export class Moodle {
         warnings.push('CACHE_READ_FAILED');
         return null;
       }) : null;
-      const reused = cached?.content === fingerprint ? decodeCourseIndex(cached.index, courseId) : null;
+      const expectedSourceUrls = new Set([course.url, ...course.sections.map(section => section.url ?? course.url),
+        ...resources.map(resource => resource.sourceUrl)]);
+      const expectedCitations = new Set([course.url, ...course.sections.map(section => section.url ?? course.url)]
+        .map(url => JSON.stringify([url, null])));
+      for (const resource of resources) {
+        for (const page of resource.format === 'pdf' ? resource.pages ?? [] : [{ pageNumber: null }]) {
+          expectedCitations.add(JSON.stringify([resource.sourceUrl, page.pageNumber]));
+        }
+      }
+      const reused = cached?.content === fingerprint
+        ? decodeCourseIndex(cached.index, courseId, expectedSourceUrls, expectedCitations) : null;
       if (cached?.content === fingerprint && !reused) warnings.push('CACHE_INDEX_INVALID');
       const index = reused ?? buildCourseIndex(course, resources);
       if (fingerprint && !reused) {

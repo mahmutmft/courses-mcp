@@ -33,6 +33,14 @@ Per-course coverage includes CACHE_INVALIDATION_FAILED if the cached snapshot co
 
 Search coverage reports CACHE_READ_FAILED for storage read errors, CACHE_INDEX_INVALID for a matching record whose index cannot be decoded, and CACHE_WRITE_FAILED when the rebuilt index cannot be saved. These warnings describe local storage. The coverage status still reflects live Moodle evidence.
 
+Before reuse, decoded source URLs and page references must belong to the current
+authorized discovery/reader evidence. Chunk tokens must match the unique normalized
+words in their displayed excerpt, and unsupported sources cannot supply chunks.
+Rejected records fall back to a newly built live index with CACHE_INDEX_INVALID;
+valid schema-v1 snapshots remain reusable. Old snapshots with a text-boundary
+fragment or inconsistent metadata may rebuild once. This checks structure and
+currently observed citations, not cryptographic authenticity of local files.
+
 ## Manage a course cache through MCP
 
 Use get_course_cache(courseId) to inspect the stored record's size and timestamp.
