@@ -13,13 +13,12 @@ The server reads supported Moodle HTML, text PDFs, folders and published coursew
 Requires Node.js 24 or newer. From the repository directory:
 
 ~~~powershell
-npm ci
-npm run browser:install
-# Only for fresh clones without .env:
-Copy-Item .env.example .env
+npm run setup
 ~~~
 
-Open .env locally and fill MOODLE_USERNAME and MOODLE_PASSWORD with your faculty login. Do not overwrite an existing .env. Git ignores it, but cloud-sync software can still synchronize ignored files. Never paste credentials into chats, issues, or logs.
+Setup installs the locked dependencies and Chromium, checks browser launch and MCP tool discovery without signing in, creates a blank .env only if missing, and prints a client configuration for your installation. Copy that configuration into a compatible client; no client settings are edited automatically. Existing .env and saved preferences are preserved. Stop any running MCP connection before rerunning setup for an upgrade. First-time downloads can take several minutes.
+
+Open .env locally and fill MOODLE_USERNAME and MOODLE_PASSWORD with your faculty login. Do not overwrite an existing .env. Git ignores it, but cloud-sync software can still synchronize ignored files. Never paste credentials into chats, issues, or logs. For the manual installation, credential-free contributor path and recovery steps, see [the setup checklist](docs/SETUP_CHECKLIST.md).
 
 ~~~powershell
 npm run doctor

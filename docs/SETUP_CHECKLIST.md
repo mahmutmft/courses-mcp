@@ -1,5 +1,39 @@
 # Windows setup and recovery checklist
 
+## Guided setup
+
+After installing Node.js 24+ and cloning this repository, run `npm run setup` from
+the clone. No npm dependencies need to be installed first. The entry point uses
+only Node built-ins until dependencies are installed. It runs locked dependency
+installation and Chromium installation, launches Chromium, and checks actual MCP
+initialization/tool discovery without faculty login. It creates a blank .env
+exclusively if missing, then prints correctly escaped JSON with absolute command
+and entry-point paths. Review/copy it into a compatible stdio MCP client. Other
+clients may use different settings formats; use the printed command and args.
+
+Compared with the manual path below, dependency/browser/configuration preparation
+is one command. Entering local credentials and connecting/restarting the client
+remain explicit steps. A generated configuration contains local paths; do not
+post it publicly. The check does not verify a GUI client or faculty access.
+
+The guided path is chosen instead of silently editing client-specific settings
+or shipping a new installer. It adds no dependencies, retains the manual path,
+and requires no paid API key. It does not install Node/npm themselves.
+Dependency installation prefers the existing npm download cache and skips the
+automatic audit/funding requests; release/contributor validation still runs
+`npm audit` separately. Package-lock integrity checks remain enabled.
+
+Stop running MCP processes before rerunning setup (npm ci replaces dependencies).
+Reruns retain .env and never touch private preferences/cache. Steps show progress
+and have a five-minute subprocess timeout. Child output is suppressed because
+diagnostics can contain private environment details. If interrupted or a download
+fails, fix connectivity/disk space and rerun; no automatic repeated login occurs.
+Use the manual commands below for troubleshooting locally; inspect their logs for
+secrets before sharing. Linux may require OS browser libraries installed by the
+system administrator; only recorded platform/client checks establish support.
+
+## Manual setup and contributor checks
+
 From a fresh checkout in PowerShell, use Node.js 24 or later.
 
 ~~~powershell
