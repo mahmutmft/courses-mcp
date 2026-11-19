@@ -36,9 +36,15 @@ export class CourseCache extends LabPreferences {
     if (!record || Object.keys(record).sort().join(',') !== 'content,index,schemaVersion,updatedAt' ||
         record.schemaVersion !== 1 || typeof record.content !== 'string' || typeof record.index !== 'string' ||
         typeof record.updatedAt !== 'string' || !Number.isFinite(Date.parse(record.updatedAt)) ||
+        new Date(record.updatedAt).toISOString() !== record.updatedAt ||
         Buffer.byteLength(JSON.stringify(record) + '\n') > maxBytes) {
       throw new UserError('Invalid or unsupported course cache record (CACHE_INVALID_RECORD).');
     }
+  }
+
+  freshness(record) {
+    const age = Date.parse(this.now()) - Date.parse(record.updatedAt);
+    return !Number.isFinite(age) ? 'unknown' : age < 0 ? 'future' : age < maxAgeMs ? 'fresh' : 'expired';
   }
 
   async get(courseId) {
@@ -47,8 +53,7 @@ export class CourseCache extends LabPreferences {
     await this.checkDirectories(file);
     const record = await this.load(file);
     if (!record) return null;
-    const age = Date.parse(this.now()) - Date.parse(record.updatedAt);
-    return age >= 0 && age < maxAgeMs ? record : null;
+    return this.freshness(record) === 'fresh' ? record : null;
   }
 
   async set(courseId, { content, index }) {
@@ -71,7 +76,8 @@ export class CourseCache extends LabPreferences {
     const file = this.location(courseId);
     await this.checkDirectories(file);
     const record = await this.load(file);
-    return record ? { updatedAt: record.updatedAt, bytes: Buffer.byteLength(JSON.stringify(record) + '\n') } : null;
+    return record ? { updatedAt: record.updatedAt, bytes: Buffer.byteLength(JSON.stringify(record) + '\n'),
+      freshness: this.freshness(record) } : null;
   }
 
   async delete(courseId) {

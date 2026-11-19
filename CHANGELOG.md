@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Report local cache freshness explicitly and reject noncanonical cache timestamps; verify quota contention and interrupted-writer recovery.
+
 - Add npm run setup for guided dependency/browser installation, local startup checks and copyable MCP client configuration without overwriting .env.
 
 - Continue PDF resource reads with startPage and nextPage while preserving per-call limits and original page citations.
