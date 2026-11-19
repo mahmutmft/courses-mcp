@@ -67,4 +67,18 @@ For an upgrade, stop the connection, update the checkout, run npm ci and npm run
 
 ## Verification record
 
+Guided setup implementation 81485d9f12f1de183259c53957de02ae4083c790 was
+tested on 2026-11-19 from a fresh temporary copy with no node_modules or .env:
+Windows build 26300, Node 24.18.0, npm 11.16.0. The final guided command completed
+in 30.6 seconds, installed dependencies, reused available npm/Playwright caches,
+launched Chromium and initialized the actual stdio server/listed its tools. This
+is a warm-cache observation, not a cold-download benchmark or speed guarantee.
+A real rerun completed in 17.0 seconds, preserving a synthetic .env byte for byte
+and without printing its sentinel password. All 201 offline tests passed; syntax
+checks, retrieval benchmark, npm audit (zero findings) and git diff checks passed.
+The guided path replaces three preparation commands with one; Node installation,
+clone, credential entry and client configuration remain explicit. GUI client
+import/tool use, live faculty login, cold-cache setup and the final v1 candidate
+matrix still require verification. These checks do not establish other OS support.
+
 Clean checkout of 1e79af5aa2cb7c247ed94397ebe14d944af811c4 on Windows build 26300, PowerShell 7.6.9, Node 24.18.0 and npm 11.16.0. npm ci, browser installation command, syntax check and 158 offline test entries passed. Playwright launched Chromium 156.0.8078.4. The blank-template doctor exited with the expected setup message. The machine may have reused the existing Playwright browser cache. GUI MCP clients and live faculty login were outside this run. Revalidate the final v1 candidate and record its supported client matrix before release.
