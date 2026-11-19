@@ -1,4 +1,5 @@
 import { collectWeeklyLabs } from './weekly-labs.js';
+import { filterCourseList } from './courses.js';
 import { createHash } from 'node:crypto';
 import { CourseCache } from './course-cache.js';
 import { buildCourseIndex, decodeCourseIndex, rankCourseIndexes } from './course-index.js';
@@ -216,14 +217,25 @@ export class Moodle {
     }
   }
 
-  async searchCourses(courseIds, query, limit, documents = [], refresh = false) {
+  async searchCourses(courseIds, query, limit, documents = [], refresh = false, filters = {}) {
     const { courses } = await this.listCourses();
-    const selected = [...new Set(courseIds)];
-    if (selected.some(id => !courses.some(course => course.id === id))) {
+    const requested = [...new Set(courseIds)];
+    if (requested.some(id => !courses.some(course => course.id === id))) {
       throw new UserError('A selected course is not in your enrolled course list.');
     }
-    if (documents.some(item => !selected.includes(item.courseId))) {
+    if (documents.some(item => !requested.includes(item.courseId))) {
       throw new UserError('Select the course for every requested document.');
+    }
+    const requestedCourses = requested.map(id => courses.find(course => course.id === id));
+    const filtered = filterCourseList({ courses: requestedCourses }, filters);
+    const selected = filtered.courses.map(course => course.id);
+    const unclassifiedCourseIds = requestedCourses.filter(course =>
+      filterCourseList({ courses: [course] }, filters).unclassifiedCount > 0).map(course => course.id);
+    const selection = { requestedCourseIds: requested, searchedCourseIds: selected,
+      filteredOutCourseIds: requested.filter(id => !selected.includes(id)), unclassifiedCourseIds,
+      filters: filtered.filters, classificationSource: filtered.classificationSource };
+    if (documents.some(item => !selected.includes(item.courseId))) {
+      throw new UserError('A requested document course is outside the selected academic-year/semester scope or has unresolved labels.');
     }
     const cache = new CourseCache(this.config, {
       enabled: this.config.cacheSearchIndexes,
@@ -231,7 +243,7 @@ export class Moodle {
     });
     const indexes = [];
     const coverage = [];
-    const request = this.page.context().request;
+    const request = selected.length ? this.page.context().request : null;
     for (const courseId of selected) {
       const warnings = [];
       const invalidate = () => cache.delete(courseId).catch(() => {
@@ -289,10 +301,10 @@ export class Moodle {
       checkedAt, indexReused: Boolean(reused), sources: index.sources, warnings: [...index.warnings, ...warnings], unavailableResourceIds: unavailable });
     }
     const ranked = rankCourseIndexes(indexes, query, limit + 1);
-    const complete = coverage.every(course => course.status === 'read');
+    const complete = !unclassifiedCourseIds.length && coverage.every(course => course.status === 'read');
     const status = complete ? 'read' : 'partial';
     const matchStatus = ranked.length ? 'found' : complete ? 'no_match' : 'unknown';
-    return { status, matchStatus, matches: ranked.slice(0, limit), truncated: ranked.length > limit, coverage,
+    return { status, matchStatus, matches: ranked.slice(0, limit), truncated: ranked.length > limit, coverage, selection,
       scope: 'Live index of visible section text and explicitly selected supported HTML/PDF resources. Other documents and folders are outside this search.' };
   }
 
