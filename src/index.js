@@ -101,14 +101,16 @@ register('list_courses', 'List enrolled Moodle courses, optionally filtered by e
 register('get_course', 'Browse an enrolled course main page and discovered section pages. Returns deduplicated resources and coverage warnings for unavailable pages or limits. Does not expand folders or files.', { courseId }, args => moodle.getCourse(args.courseId));
 register('read_resource', 'Read supported Moodle HTML or page-numbered PDF text from a discovered resource. resourceId is the numeric course-module id in its source URL. For PDF only, optional startPage (1-based) reads a bounded batch starting there; follow nextPage until null to inspect later pages. partialPages and failedPages remain incomplete even when nextPage is null. Returns provenance and read/partial/unsupported status. No external origins, OCR, forms, or lab schedule inference.', { courseId, resourceId: courseId, startPage: courseId.optional() },
   args => moodle.readResource(args.courseId, args.resourceId, args.startPage));
-register('search_courses', 'Search visible text across up to four explicitly selected enrolled courses. Optionally read up to three explicitly discovered HTML/PDF resources. Returns ranked snippets, page citations and per-course coverage. Set refresh=true to rebuild the index from current evidence.',
+register('search_courses', 'Search visible text across up to four explicitly selected enrolled courses. Optional academicYear and semester narrow those IDs using course-name labels; unresolved labels remain explicit, with no date-based inference. Optionally read up to three explicitly discovered HTML/PDF resources within that scope. Returns ranked snippets, page citations, selection and per-course coverage. Set refresh=true to rebuild the index from current evidence.',
   {
     courseIds: z.array(courseId).min(1).max(4),
+    ...courseFilters,
     query: z.string().trim().min(1).max(200),
     limit: z.number().int().min(1).max(30).default(10),
     documents: z.array(z.object({ courseId, resourceId: courseId })).max(3).optional(),
     refresh: z.boolean().default(false),
-  }, ({ courseIds, query, limit, documents, refresh }) => moodle.searchCourses(courseIds, query, limit, documents, refresh));
+  }, ({ courseIds, query, limit, documents, refresh, academicYear, semester }) =>
+    moodle.searchCourses(courseIds, query, limit, documents, refresh, { academicYear, semester }));
 register('search_course', 'Search visible section summaries and activity titles/descriptions in one enrolled course. Does not search PDF/file contents.', {
   courseId, query: z.string().trim().min(1).max(200), limit: z.number().int().min(1).max(100).default(30),
 }, async args => searchCourse(await moodle.getCourse(args.courseId), args.query, args.limit));

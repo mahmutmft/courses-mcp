@@ -1,5 +1,28 @@
 # Bounded lexical index
 
+## Search selection
+
+search_courses keeps courseIds required (1–4 enrolled IDs). Optional academicYear
+(consecutive YYYY/YYYY) and semester (winter/summer) intersect those explicit IDs
+using the same naming rules as list_courses. They never select other enrollments
+or infer the current term from the date. Without filters, every requested ID is
+searched as before, including courses with unclassified names.
+
+The additive selection object reports requestedCourseIds, searchedCourseIds,
+filteredOutCourseIds, unclassifiedCourseIds, filters and classificationSource.
+filteredOutCourseIds includes unresolved IDs; unclassifiedCourseIds is that
+uncertain subset. Only known matching IDs are fetched. Any unresolved selected
+labels make aggregate coverage partial; empty hits then mean unknown. If all
+requested IDs are known nonmatches, the empty selected scope returns read/no_match,
+not a statement about courses outside those IDs. No page is fetched in either
+empty-scope case. A requested document outside the filtered scope fails explicitly.
+Enrollment is checked before filtering, so a filter cannot bypass course access.
+
+Example: courseIds=[42,43], academicYear=2026/2027, semester=winter searches only
+the matching winter course among those two IDs. Returned checkedAt values describe
+current source checks; indexReused does not imply stale permission reuse. Limits,
+ranking, selected-document coverage and the existing search_course tool are unchanged.
+
 buildCourseIndex consumes one authorized course discovery and explicitly supplied
 reader results. It does not fetch content, determine enrollment, or crawl files.
 search_courses supplies up to four selected courses and three selected HTML/PDF

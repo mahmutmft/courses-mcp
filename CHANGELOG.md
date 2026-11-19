@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Narrow cross-course search by explicit academic year/semester and report searched, excluded and unclassified course IDs.
+
 - Validate reused search indexes against current source/page citations and excerpt-derived tokens; rebuild inconsistent snapshots from live evidence.
 
 - Report local cache freshness explicitly and reject noncanonical cache timestamps; verify quota contention and interrupted-writer recovery.

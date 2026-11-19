@@ -317,3 +317,65 @@ test('search retains valid hits while reporting an unavailable selected course',
   assert.ok(result.matches.every(hit => hit.courseId === 42));
   assert.equal(result.coverage.find(course => course.courseId === 43).status, 'unavailable');
 });
+
+test('search term filters intersect explicit IDs and report unresolved selected course labels', async () => {
+  const moodle = new Moodle({});
+  const courses = [
+    { id: 42, name: 'Databases 2026/2027 winter' },
+    { id: 43, name: 'Testing 2026/2027 summer' },
+    { id: 44, name: 'Unknown academic term' },
+    { id: 45, name: 'Archived 2025/2026 winter' },
+  ];
+  moodle.listCourses = async () => ({ courses });
+  const visited = [];
+  moodle.page = { context: () => ({ request: { get: async url => {
+    const id = Number(new URL(url).searchParams.get('id'));
+    visited.push(id);
+    return response({ html: page(block(100 + id, 1, 'Распоред café', 0), id) });
+  } } }) };
+  const result = await moodle.searchCourses([42, 43, 44, 45], 'РАСПОРЕД CAFÉ', 10, [], false,
+    { academicYear: '2026/2027', semester: 'winter' });
+  assert.deepEqual(visited, [42]);
+  assert.deepEqual(result.selection.searchedCourseIds, [42]);
+  assert.deepEqual(result.selection.filteredOutCourseIds, [43, 44, 45]);
+  assert.deepEqual(result.selection.unclassifiedCourseIds, [44]);
+  assert.deepEqual(result.selection.filters, { academicYear: '2026/2027', semester: 'winter' });
+  assert.equal(result.status, 'partial');
+  assert.equal(result.matchStatus, 'found');
+  assert.ok(result.matches.every(hit => hit.courseId === 42 && hit.score === 2));
+  assert.ok(result.matches.every(hit => hit.url.startsWith(base) && hit.checkedAt));
+  visited.length = 0;
+  const unfiltered = await moodle.searchCourses([42, 43, 44, 45], 'café', 10);
+  assert.deepEqual(visited, [42, 43, 44, 45]);
+  assert.deepEqual(unfiltered.selection.unclassifiedCourseIds, []);
+  assert.deepEqual(unfiltered.selection.filters, { academicYear: null, semester: null });
+  assert.equal(unfiltered.status, 'read');
+});
+
+test('empty filtered search distinguishes known exclusions from unresolved evidence without fetching pages', async () => {
+  for (const [name, expectedStatus, expectedMatch] of [
+    ['Course 2026/2027 summer', 'read', 'no_match'],
+    ['Unclassified course', 'partial', 'unknown'],
+    ['Conflicting 2026/2027 winter and 2026/2027 summer', 'partial', 'unknown'],
+  ]) {
+    const moodle = new Moodle({});
+    moodle.listCourses = async () => ({ courses: [{ id: 42, name }] });
+    moodle.page = { context: () => assert.fail('no page access outside filtered selection') };
+    const result = await moodle.searchCourses([42], 'lab', 10, [], false, { semester: 'winter' });
+    assert.equal(result.status, expectedStatus);
+    assert.equal(result.matchStatus, expectedMatch);
+    assert.deepEqual(result.matches, []);
+    assert.deepEqual(result.coverage, []);
+    assert.deepEqual(result.selection.searchedCourseIds, []);
+  }
+});
+
+test('term filters never bypass enrollment checks or silently omit requested documents', async () => {
+  const moodle = new Moodle({});
+  moodle.listCourses = async () => ({ courses: [{ id: 42, name: 'Course 2026/2027 summer' }] });
+  moodle.page = { context: () => assert.fail('unexpected page access') };
+  await assert.rejects(moodle.searchCourses([42, 999], 'lab', 10, [], false, { semester: 'winter' }), /not in your enrolled/);
+  await assert.rejects(moodle.searchCourses([42], 'lab', 10, [{ courseId: 42, resourceId: 1 }], false,
+    { semester: 'winter' }), /outside the selected/);
+  await assert.rejects(moodle.searchCourses([42], 'lab', 10, [{ courseId: 999, resourceId: 1 }]), /Select the course/);
+});
