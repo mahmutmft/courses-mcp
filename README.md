@@ -51,6 +51,9 @@ The server finds .env relative to its own project directory, regardless of the c
 | --- | --- | --- |
 | list_courses | optional academicYear (YYYY/YYYY), semester (winter/summer) | Enrolled courses, inferred term labels, source URLs, and unresolved-filter count |
 | get_course | courseId | Discovered sections, summaries, deduplicated resource links, and coverage warnings |
+| start_course_refresh | courseIds, optional documents | Start an opt-in private index-refresh checkpoint; no document fetch yet |
+| get_course_refresh | none | Aggregate progress of the current account's refresh job |
+| advance_course_refresh | action: next/cancel/resume | Rebuild one pending course or pause/resume between steps; local writes only |
 | read_resource | courseId, resourceId (numeric module ID from its URL) | Supported Moodle HTML or page-numbered PDF text, source, checkedAt, and read/partial/unsupported status |
 | get_choice_selection | courseId, choiceId (numeric module ID) | Your saved poll label, conservative term fields, source and retrieval time; no voting |
 | get_announcements | courseId, forumId (numeric module ID) | Supported news-forum root posts with dates, source links and explicit pagination/coverage |
@@ -63,6 +66,10 @@ The server finds .env relative to its own project directory, regardless of the c
 | search_course | courseId, query, optional limit (1–100) | Matching section/activity text with source URLs |
 
 Example: ask your agent to list your courses, then search a selected course for “лабораториски” or “exam”. Search is case-insensitive and supports Macedonian text.
+
+For explicit resumable index refresh with local caching enabled, see
+[refresh jobs](docs/REFRESH_JOBS.md). Progress survives normal restart; no
+background polling is started and cancellation happens between steps.
 
 ### Reading announcement forums
 
