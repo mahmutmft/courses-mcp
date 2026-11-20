@@ -25,6 +25,7 @@ test('actual stdio returns bounded safe errors and remains usable after oversize
       if (id === 3) throw new Error('PRIVATE_RUNTIME_SENTINEL');
       if (id === 4) throw new UserError('[CACHE_TEST] Safe fixture failure.');
       if (id === 5) return { value: BigInt(1) };
+      if (id === 6) await new Promise(resolve => setTimeout(resolve, 1000));
       return { id, name: 'Synthetic course', sourceUrl: 'https://example.test/course', checkedAt: '2026-11-20T00:00:00Z' };
     };
     await import(${JSON.stringify(new URL('../src/index.js', import.meta.url).href)});
@@ -49,6 +50,12 @@ test('actual stdio returns bounded safe errors and remains usable after oversize
       assert.equal(value.id, 2);
       assert.equal(value.sourceUrl, 'https://example.test/course');
     }
+    const busy = client.callTool({ name: 'get_course', arguments: { courseId: 6 } });
+    const burst = await Promise.all([busy, ...Array.from({ length: 8 }, () =>
+      client.callTool({ name: 'get_course', arguments: { courseId: 2 } }))]);
+    assert.ok(burst.some(result => result.isError && /REQUEST_QUEUE_LIMIT/.test(result.content[0].text)));
+    const recovered = await client.callTool({ name: 'get_course', arguments: { courseId: 2 } });
+    assert.equal(JSON.parse(recovered.content[0].text).id, 2);
     assert.equal(stderr, '');
   } finally { await client.close(); }
 });

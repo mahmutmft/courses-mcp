@@ -22,6 +22,7 @@ import { LoginError, classifyLoginError, loginOutcome } from './login.js';
 
 const MOODLE = 'https://courses.finki.ukim.mk';
 const CAS = 'https://cas.finki.ukim.mk';
+export const maxQueuedOperations = 8;
 
 export class Moodle {
   constructor(config, { launchBrowser = () => chromium.launch({ headless: true }), preferences = new LabPreferences(config), termPreferences = new LabTermPreferences(config) } = {}) {
@@ -30,11 +31,21 @@ export class Moodle {
     this.preferences = preferences;
     this.termPreferences = termPreferences;
     this.queue = Promise.resolve();
+    this.pendingOperations = 0;
   }
 
   // Serialize operations because all tools share one authenticated page.
-  run(operation) {
-    const result = this.queue.then(operation);
+  run(operation, { signal } = {}) {
+    const cancelled = () => new UserError('Request cancelled before execution (REQUEST_CANCELLED).');
+    if (signal?.aborted) return Promise.reject(cancelled());
+    if (this.pendingOperations >= maxQueuedOperations) {
+      return Promise.reject(new UserError('Too many pending MCP requests (REQUEST_QUEUE_LIMIT). Wait for current requests to finish before retrying.'));
+    }
+    this.pendingOperations++;
+    const result = this.queue.then(() => {
+      if (signal?.aborted) throw cancelled();
+      return operation();
+    }).finally(() => { this.pendingOperations--; });
     this.queue = result.catch(() => {});
     return result;
   }
