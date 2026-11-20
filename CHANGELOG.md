@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Lock public tool schemas/annotations with a reviewed stdio inventory and return TOOL_OUTPUT_LIMIT instead of emitting oversized JSON text.
+
 - Add opt-in, account-scoped refresh jobs with one-course checkpoints, progress counts and explicit cancellation/resumption across restarts.
 
 - Narrow cross-course search by explicit academic year/semester and report searched, excluded and unclassified course IDs.
