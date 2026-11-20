@@ -1,5 +1,14 @@
 # MCP tool contracts
 
+## Explicit refresh jobs
+
+start_course_refresh and advance_course_refresh are annotated non-read-only,
+non-idempotent local writes; get_course_refresh is read-only. All require explicit
+cache opt-in and current enrollment. Progress responses contain counts/state only.
+One advance processes at most one course. Cancellation applies between calls,
+and complete means all steps attempted, not complete evidence. Check partial/failed
+counts and warnings. See [refresh job contracts and recovery](REFRESH_JOBS.md).
+
 ## Cache inspection freshness
 
 get_course_cache retains stored/empty presence status. A present record additionally

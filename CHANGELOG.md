@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add opt-in, account-scoped refresh jobs with one-course checkpoints, progress counts and explicit cancellation/resumption across restarts.
+
 - Narrow cross-course search by explicit academic year/semester and report searched, excluded and unclassified course IDs.
 
 - Validate reused search indexes against current source/page citations and excerpt-derived tokens; rebuild inconsistent snapshots from live evidence.

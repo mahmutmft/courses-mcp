@@ -1,4 +1,5 @@
 import { collectWeeklyLabs } from './weekly-labs.js';
+import { RefreshJob } from './refresh-jobs.js';
 import { filterCourseList } from './courses.js';
 import { createHash } from 'node:crypto';
 import { CourseCache } from './course-cache.js';
@@ -215,6 +216,20 @@ export class Moodle {
       if (error instanceof UserError) throw error;
       throw new UserError('Local course cache could not be accessed (CACHE_MANAGEMENT_FAILED).');
     }
+  }
+
+  async courseRefresh(action, selection) {
+    if (!this.config.cacheSearchIndexes) throw new UserError('Enable MOODLE_CACHE_SEARCH_INDEXES=1 locally before using refresh jobs (REFRESH_CACHE_DISABLED).');
+    const { courses } = await this.listCourses();
+    const job = new RefreshJob(this.config, {
+      authorize: async id => courses.some(course => course.id === id),
+      refresh: async (courseId, documents) => {
+        const result = await this.searchCourses([courseId], 'refresh', 1, documents, true);
+        const storageFailed = result.coverage.some(course => course.warnings.some(warning => /^CACHE_/.test(warning)));
+        return { status: result.status === 'read' && !storageFailed ? 'read' : 'partial' };
+      },
+    });
+    return action === 'start' ? job.start(selection) : action === 'status' ? job.status() : job.advance(action);
   }
 
   async searchCourses(courseIds, query, limit, documents = [], refresh = false, filters = {}) {

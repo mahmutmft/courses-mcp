@@ -10,6 +10,8 @@ Node.js >=24, JavaScript ES modules, npm lockfile. The official MCP SDK v1 handl
 
 ## Architecture and important directories
 
+- src/refresh-jobs.js: bounded private metadata checkpoints for explicit course-index refresh, with current authorization and between-call cancellation/resumption; see docs/REFRESH_JOBS.md.
+
 - src/config.js: project-relative .env loading, faculty-origin validation, safe errors.
 - src/moodle.js: serialized browser access, CAS login, enrolled-course AJAX calls, course-page browsing.
 - src/login.js: fixed login error codes, safe failure classification, and browser-side CAS/session outcome detection.

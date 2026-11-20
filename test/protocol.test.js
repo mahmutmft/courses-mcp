@@ -18,6 +18,14 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
   try {
     await client.connect(transport);
     assert.equal(client.getServerVersion()?.version, packageInfo.version);
+    for (const [name, arguments_] of [
+      ['start_course_refresh', { courseIds: [] }],
+      ['advance_course_refresh', { action: 'delete_all' }],
+    ]) {
+      const invalid = await client.callTool({ name, arguments: arguments_ });
+      assert.equal(invalid.isError, true);
+      assert.doesNotMatch(invalid.content[0].text, /Fill MOODLE_USERNAME/);
+    }
     for (const filter of [{ academicYear: '2026/2028' }, { semester: 'current' }, { academicYear: '26/27' }]) {
       const invalid = await client.callTool({ name: 'search_courses', arguments: { courseIds: [42], query: 'lab', ...filter } });
       assert.equal(invalid.isError, true);
@@ -37,7 +45,7 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
       assert.doesNotMatch(invalid.content[0].text, /Fill MOODLE_USERNAME/);
     }
     const { tools } = await client.listTools();
-    assert.deepEqual(tools.map(tool => tool.name).sort(), ['clear_course_cache', 'get_announcements', 'get_assignment', 'get_choice_selection', 'get_course', 'get_course_cache', 'get_coursework_deadlines', 'get_folder', 'get_lab_preference', 'get_lab_schedule', 'get_lab_term_preference', 'get_lab_timetable', 'get_quiz', 'get_weekly_labs', 'list_courses', 'read_folder_file', 'read_resource', 'search_course', 'search_courses', 'set_lab_preference', 'set_lab_term_preference']);
+    assert.deepEqual(tools.map(tool => tool.name).sort(), ['advance_course_refresh', 'clear_course_cache', 'get_announcements', 'get_assignment', 'get_choice_selection', 'get_course', 'get_course_cache', 'get_course_refresh', 'get_coursework_deadlines', 'get_folder', 'get_lab_preference', 'get_lab_schedule', 'get_lab_term_preference', 'get_lab_timetable', 'get_quiz', 'get_weekly_labs', 'list_courses', 'read_folder_file', 'read_resource', 'search_course', 'search_courses', 'set_lab_preference', 'set_lab_term_preference', 'start_course_refresh']);
     for (const arguments_ of [
       { courseIds: Array.from({ length: 11 }, (_, i) => i + 1), range: { from: '2026-11-01', through: '2026-11-02' } },
       { courseIds: [42], range: { from: '2026-11-01', through: '2026-12-02' } },
@@ -51,8 +59,13 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
       assert.equal(invalidWeek.isError, true);
       assert.doesNotMatch(invalidWeek.content[0].text, /Fill MOODLE_USERNAME/);
     }
-    assert.ok(tools.filter(tool => !['clear_course_cache', 'set_lab_preference', 'set_lab_term_preference'].includes(tool.name)).every(tool => tool.annotations.readOnlyHint));
+    assert.ok(tools.filter(tool => !['advance_course_refresh', 'start_course_refresh', 'clear_course_cache', 'set_lab_preference', 'set_lab_term_preference'].includes(tool.name)).every(tool => tool.annotations.readOnlyHint));
     const clearer = tools.find(tool => tool.name === 'clear_course_cache');
+    for (const name of ['start_course_refresh', 'advance_course_refresh']) {
+      const tool = tools.find(tool => tool.name === name);
+      assert.equal(tool.annotations.readOnlyHint, false);
+      assert.equal(tool.annotations.idempotentHint, false);
+    }
     assert.equal(clearer.annotations.readOnlyHint, false);
     assert.equal(clearer.annotations.destructiveHint, true);
     for (const name of ['get_course_cache', 'clear_course_cache']) {

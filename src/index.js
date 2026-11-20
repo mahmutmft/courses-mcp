@@ -1,4 +1,5 @@
 import { maxDeadlineCourses } from './deadlines.js';
+import { refreshSelection } from './refresh-jobs.js';
 import { resolveLabChanges } from './scheduling/lab-changes.js';
 import { expandLabOccurrences, isOccurrenceRange } from './scheduling/occurrences.ts';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -22,6 +23,13 @@ const server = new McpServer({ name: 'finki-courses', version: packageInfo.versi
 });
 const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true };
 const courseId = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
+const refreshAnnotations = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true };
+register('start_course_refresh', 'Start a private local refresh job for up to four explicit enrolled courses and three selected HTML/PDF documents. Requires opt-in search caching. Stores IDs/progress only, does not fetch documents yet. Existing ready jobs must be finished or cancelled. No Moodle writes or background polling.', refreshSelection,
+  args => moodle.courseRefresh('start', args), refreshAnnotations);
+register('get_course_refresh', 'Read aggregate progress of the current account local refresh job after current enrollment checks. Returns counts and state only, no course text or local paths. Complete means all steps attempted, including partial/failed steps.', {},
+  () => moodle.courseRefresh('status'));
+register('advance_course_refresh', 'Explicitly advance one course of a saved refresh job, cancel between steps, or resume a cancelled job. Rechecks access and uses bounded forced index rebuilds. One local checkpoint per course survives normal restart; an interrupted in-flight step may repeat safely. No background jobs or Moodle writes.',
+  { action: z.enum(['next', 'cancel', 'resume']).default('next') }, args => moodle.courseRefresh(args.action), refreshAnnotations);
 register('get_course_cache', 'Inspect local cache size and write timestamp for one currently enrolled course. Returns metadata only and whether search caching is enabled.',
   { courseId }, ({ courseId }) => moodle.manageCourseCache(courseId));
 register('clear_course_cache', 'Delete the local cached index for one currently enrolled course only after an explicit user request. Preserves lab preferences and Moodle content.',
