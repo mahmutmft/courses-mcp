@@ -41,13 +41,16 @@ The server uses stdio. Restart the client connection after updating the checkout
 
 | Tool | Inputs | Result |
 | --- | --- | --- |
+| start_course_refresh | courseIds (1–4), optional documents (up to 3) | Creates private refresh progress without fetching documents |
+| get_course_refresh | No inputs | Account-scoped progress counts/state after current access checks |
+| advance_course_refresh | Optional action (next, cancel, resume; default next) | One-course refresh/checkpoint or between-call cancellation/resumption |
 | list_courses | Optional academicYear and semester (winter or summer) | Enrolled courses, label classification and truncation |
 | get_course_cache | courseId | Local cache size and write timestamp, with enrollment verification |
 | clear_course_cache | courseId | Explicit local deletion of the selected course cache |
 | get_course | courseId | Sections, discovered resources and traversal coverage |
 | search_course | courseId, query, optional limit | Matches in visible section and activity text |
-| search_courses | courseIds (1–4), query, optional limit (1–30), optional documents (up to 3 courseId/resourceId pairs) | Ranked live index snippets with source/page citations and per-course coverage |
-| read_resource | courseId, resourceId | Supported HTML or page-cited PDF text |
+| search_courses | courseIds (1–4), query, optional limit (1–30), documents (up to 3 pairs), refresh, academicYear, semester | Ranked snippets, current citations, explicit selection and coverage |
+| read_resource | courseId, resourceId, optional startPage (PDF only) | Supported HTML or page-cited PDF text with continuation metadata |
 | get_folder | courseId, folderId | Discovered folder contents and coverage |
 | read_folder_file | courseId, folderId, fileId | Text of one discovered folder PDF |
 | get_choice_selection | courseId, choiceId | Saved selection, explicit absence or unknown |
@@ -57,6 +60,7 @@ The server uses stdio. Restart the client connection after updating the checkout
 | get_coursework_deadlines | courseIds, range | Published date fields across selected courses |
 | get_lab_timetable | courseId, resourceId, optional occurrenceRange and announcementForumId | Timetable evidence, optional dated expansion and announcement changes |
 | get_lab_schedule | courseId, weekStart | Dated candidates and term-linked homework for one course |
+| get_weekly_labs | courseIds (1–4), weekStart, optional fromDate within the week | Cross-course dated candidates, undated homework and uncertainty |
 | get_lab_preference | courseId | Local attendance preference |
 | set_lab_preference | courseId, attendance | Saves attending or exempt, or clears the record with unknown |
 | get_lab_term_preference | courseId | Local group and term preference |
@@ -68,9 +72,49 @@ Successful calls return a JSON object encoded in a text content item. Validation
 
 Where available, sourceUrl or per-item sources identify evidence. checkedAt records when the reader checked it. Published timestamps describe the source event. A null timezone or instant preserves uncertainty. partial means coverage or fields are incomplete. unsupported describes an unreadable layout or format. Consult each tool's coverage and warnings before treating an empty result as complete.
 
-Search queries accept up to 200 characters and return at most 100 matches (default 30). Coursework deadline lookup accepts up to 10 course IDs and reads at most 24 activities. Other readers apply tool-specific page, text and traversal limits. See [README](../README.md), [folder contracts](FOLDERS.md) and [timetable contracts](TIMETABLES.md).
+Search queries accept up to 200 characters. search_course returns at most 100 matches (default 30); search_courses returns at most 30 (default 10). Coursework deadline lookup accepts up to 10 course IDs and reads at most 24 activities. Other readers apply tool-specific page, text and traversal limits. See [README](../README.md), [folder contracts](FOLDERS.md) and [timetable contracts](TIMETABLES.md).
 
-Tool annotations identify both preference setters as local writes. Invoke them only for an explicit request to save or reset a preference. Moodle access is read-only.
+The two preference setters, clear_course_cache and start/advance_course_refresh are local writes. Invoke writes only for an explicit user request. clear_course_cache is destructive and idempotent; preference setters are idempotent; refresh start/advance are non-idempotent. All other tools are annotated read-only. Moodle access remains read-only.
+
+## Reviewed schema inventory and compatibility
+
+[The machine-readable inventory](../test/fixtures/tool-contracts.json) records all
+24 tools' input schemas, required/optional fields, defaults and annotations as
+discovered over actual stdio. The contractVersion field versions this inventory's
+format, not the package or a published v1 API. The current package is pre-v1.
+The protocol test compares every tool to it and verifies this table's tool names.
+It deliberately does not freeze descriptive prose or claim output JSON schemas
+that the server does not advertise.
+
+When changing public inputs or annotations, run `npm run contracts:update`, inspect
+the complete diff and update these docs plus behavior tests. Do not regenerate a
+snapshot just to hide an unexplained failure. Preserve existing input names,
+defaults and response fields where possible. Additive optional fields are normally
+compatible; removing/renaming fields or changing meaning requires explicit migration
+notes and the version policy in docs/RELEASING.md. Reconcile the inventory again
+after remaining features and on the final v1 candidate; this is not a v1 release.
+
+## Result envelope, errors and size limit
+
+Successful tool results have one text content item containing complete JSON.
+Reader-level partial/unsupported outcomes are successful envelopes whose JSON
+must be inspected for coverage and warnings. Thrown errors use isError=true and
+plain text, not a JSON result object. SDK argument-validation errors can use the
+SDK's own text format; clients must not parse them as successful reader JSON.
+
+Known safe error messages retain their existing codes/text; unexpected runtime or
+serialization errors use the fixed generic message. Existing code families include
+LOGIN_*, PDF_*, RESOURCE_*, CACHE_*, REFRESH_* and local preference codes. Reader
+warnings remain reader-specific; no new universal error wrapper renames old fields.
+
+Every successful JSON text is limited to 1 MiB measured as UTF-8 bytes after JSON
+serialization, excluding MCP framing. Oversized output becomes the fixed
+TOOL_OUTPUT_LIMIT error asking for narrower input. It is never sliced into invalid
+JSON or silently returned as complete evidence. An error does not roll back any
+local write already completed. Reader-specific smaller bounds still apply. This
+check bounds emitted success text, not allocations made before/while serializing,
+total process memory, worker native memory, or the wire envelope size. The limits
+audit remains #47; independent review remains #48.
 
 ## Cross-course search coverage
 

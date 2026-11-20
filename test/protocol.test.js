@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { toolContracts } from '../scripts/tool-contracts.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
@@ -45,6 +47,11 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
       assert.doesNotMatch(invalid.content[0].text, /Fill MOODLE_USERNAME/);
     }
     const { tools } = await client.listTools();
+    const baseline = JSON.parse(readFileSync(new URL('./fixtures/tool-contracts.json', import.meta.url), 'utf8'));
+    assert.deepEqual(toolContracts(tools), baseline, 'Review schema/annotation changes and update the contract inventory explicitly.');
+    const documentation = readFileSync(new URL('../docs/MCP-CONTRACTS.md', import.meta.url), 'utf8');
+    const documented = [...documentation.matchAll(/^\| ([a-z_]+) \|/gm)].map(match => match[1]).sort();
+    assert.deepEqual(documented, tools.map(tool => tool.name).sort());
     assert.deepEqual(tools.map(tool => tool.name).sort(), ['advance_course_refresh', 'clear_course_cache', 'get_announcements', 'get_assignment', 'get_choice_selection', 'get_course', 'get_course_cache', 'get_course_refresh', 'get_coursework_deadlines', 'get_folder', 'get_lab_preference', 'get_lab_schedule', 'get_lab_term_preference', 'get_lab_timetable', 'get_quiz', 'get_weekly_labs', 'list_courses', 'read_folder_file', 'read_resource', 'search_course', 'search_courses', 'set_lab_preference', 'set_lab_term_preference', 'start_course_refresh']);
     for (const arguments_ of [
       { courseIds: Array.from({ length: 11 }, (_, i) => i + 1), range: { from: '2026-11-01', through: '2026-11-02' } },
