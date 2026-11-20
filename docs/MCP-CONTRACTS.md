@@ -1,5 +1,14 @@
 # MCP tool contracts
 
+## Request admission and cancellation
+
+At most eight tool actions may execute/wait on the shared session queue. Overflow
+returns REQUEST_QUEUE_LIMIT as an isError text result. REQUEST_CANCELLED prevents
+an SDK-cancelled queued action from executing when its turn arrives; already-active
+work retains its reader cleanup/limits and serialization. This is not a hard
+in-flight cancellation or rollback. Failed requests release their queue slots.
+The [limits audit](LIMITS_AUDIT.md) inventories every current tool and its bounds.
+
 ## Explicit refresh jobs
 
 start_course_refresh and advance_course_refresh are annotated non-read-only,

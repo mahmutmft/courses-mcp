@@ -1,5 +1,8 @@
 # Moodle reader budgets
 
+For all public tools, queue/cancellation behavior, cleanup regression coverage
+and retained limitations, see [the limits audit](LIMITS_AUDIT.md).
+
 | Operation | Request and processing limits |
 | --- | --- |
 | Enrolled courses | Up to 100 API pages of 100 courses. 30 seconds for pagination after dashboard authentication and up to 10 seconds and 2 MiB per API response. |

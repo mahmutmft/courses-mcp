@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Bound the shared session queue to eight pending actions, skip cancelled queued work, and document all reader/composite resource limits.
+
 - Lock public tool schemas/annotations with a reviewed stdio inventory and return TOOL_OUTPUT_LIMIT instead of emitting oversized JSON text.
 
 - Add opt-in, account-scoped refresh jobs with one-course checkpoints, progress counts and explicit cancellation/resumption across restarts.

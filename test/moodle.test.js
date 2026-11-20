@@ -1,7 +1,61 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Moodle } from '../src/moodle.js';
+import { Moodle, maxQueuedOperations } from '../src/moodle.js';
 import { UserError } from '../src/config.js';
+
+test('session queue caps active plus waiting operations and recovers its capacity', async () => {
+  const moodle = new Moodle({});
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const order = [];
+  const calls = Array.from({ length: maxQueuedOperations }, (_, index) => moodle.run(async () => {
+    if (index === 0) await gate;
+    order.push(index);
+    return index;
+  }));
+  await assert.rejects(moodle.run(() => assert.fail('overflow operation must not execute')), /REQUEST_QUEUE_LIMIT/);
+  release();
+  assert.deepEqual(await Promise.all(calls), Array.from({ length: maxQueuedOperations }, (_, index) => index));
+  assert.deepEqual(order, Array.from({ length: maxQueuedOperations }, (_, index) => index));
+  assert.equal(moodle.pendingOperations, 0);
+  assert.equal(await moodle.run(() => 'healthy'), 'healthy');
+});
+
+test('cancelled queued work never runs or poisons the next request', async () => {
+  const moodle = new Moodle({});
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const first = moodle.run(() => gate);
+  const controller = new AbortController();
+  const skipped = assert.rejects(moodle.run(() => assert.fail('cancelled work ran'), { signal: controller.signal }), /REQUEST_CANCELLED/);
+  controller.abort();
+  const after = moodle.run(() => 'after cancellation');
+  release();
+  await Promise.all([first, skipped]);
+  assert.equal(await after, 'after cancellation');
+  await assert.rejects(moodle.run(() => assert.fail('already cancelled work ran'), { signal: controller.signal }), /REQUEST_CANCELLED/);
+  assert.equal(moodle.pendingOperations, 0);
+});
+
+test('failed and actively cancelled operations keep session serialization and release slots', async () => {
+  const moodle = new Moodle({});
+  let release, entered;
+  const active = new Promise(resolve => { entered = resolve; });
+  const gate = new Promise(resolve => { release = resolve; });
+  const controller = new AbortController();
+  const order = [];
+  const first = moodle.run(async () => { entered(); await gate; order.push('active finished'); }, { signal: controller.signal });
+  await active;
+  controller.abort(); // Active reads keep their existing reader cleanup/bounds.
+  const failure = assert.rejects(moodle.run(() => { throw new Error('synthetic failure'); }), /synthetic failure/);
+  const last = moodle.run(() => { order.push('next'); return 'healthy'; });
+  assert.deepEqual(order, []);
+  release();
+  await Promise.all([first, failure]);
+  assert.equal(await last, 'healthy');
+  assert.deepEqual(order, ['active finished', 'next']);
+  assert.equal(moodle.pendingOperations, 0);
+});
 
 test('enrolled-course pagination collects every API page', async () => {
   const moodle = new Moodle({});

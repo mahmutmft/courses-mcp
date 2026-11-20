@@ -93,13 +93,13 @@ register('get_lab_schedule', 'Connect discovered group-specific lab homework to 
 register('get_choice_selection', 'Read your saved selection from a discovered Moodle choice activity. Returns raw saved label and conservative day/time/room/group fields; missing fields remain unknown. Does not vote, change answers, infer weekly attendance, or read participant lists.', { courseId, choiceId: courseId },
   args => moodle.getChoiceSelection(args.courseId, args.choiceId));
 function register(name, description, inputSchema, action, toolAnnotations = annotations) {
-  server.registerTool(name, { description, inputSchema, annotations: toolAnnotations }, args => moodle.run(async () => {
+  server.registerTool(name, { description, inputSchema, annotations: toolAnnotations }, async (args, extra) => {
     try {
-      return encodeToolResult(await action(args));
+      return await moodle.run(async () => encodeToolResult(await action(args)), { signal: extra?.signal });
     } catch (error) {
       return { isError: true, content: [{ type: 'text', text: safeError(error) }] };
     }
-  }));
+  });
 }
 register('get_lab_preference', 'Read your local attendance preference for an enrolled course: attending, exempt (recognized labs), or unknown. This is user-declared, not faculty confirmation or a dated lab schedule.', { courseId },
   args => moodle.labPreference(args.courseId));
