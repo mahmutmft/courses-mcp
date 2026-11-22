@@ -14,6 +14,9 @@ const directive = new RegExp(
 );
 const canonical = value => value.toUpperCase().replace(/[АБЦ]/g, letter => ({ А: 'A', Б: 'B', Ц: 'C' })[letter]);
 const validDate = value => isOccurrenceRange({ from: value, through: value });
+const knownInstant = value => typeof value === 'string' &&
+  /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(value) &&
+  validDate(value.slice(0, 10)) && Number.isFinite(Date.parse(value));
 
 function parseChange(line) {
   const match = directive.exec(line);
@@ -75,7 +78,8 @@ export function resolveLabChanges(expansion, announcements) {
       if (!prefix.test(line) && !revisionLine) continue;
       const change = parseChange(line);
       if (change && (change.originalDate < expansion.range.from || change.originalDate > expansion.range.through)) continue;
-      if (!change || (revised && !revisionLine) || !post.publishedAt || post.warnings.length) {
+      if (!change || (revised && !revisionLine) || !knownInstant(post.publishedAt) ||
+          (post.updatedAt != null && !knownInstant(post.updatedAt)) || post.warnings.length) {
         postUnresolved.push({ reason: 'UNRESOLVED_ANNOUNCEMENT', evidence });
         continue;
       }
@@ -107,6 +111,27 @@ export function resolveLabChanges(expansion, announcements) {
       ? { status: 'moved', original, replacement: { ...original, ...replacement }, evidence }
       : { status: 'cancelled', original, evidence };
   });
+
+  // A move must not silently produce two active slots for the same group/time.
+  const slots = new Map();
+  for (const session of sessions) {
+    if (!['moved', 'timetable'].includes(session.status)) continue;
+    const effective = session.status === 'moved' ? session.replacement : session.original;
+    if (!effective.group || !effective.date || !effective.startTime) continue;
+    const key = JSON.stringify([canonical(effective.group), effective.date, effective.startTime, effective.timeZone ?? null]);
+    const occupants = slots.get(key) ?? [];
+    occupants.push(session);
+    slots.set(key, occupants);
+  }
+  for (const occupants of slots.values()) {
+    if (occupants.length < 2 || !occupants.some(session => session.status === 'moved')) continue;
+    for (const session of occupants) {
+      session.proposedStatus = session.status;
+      session.status = 'conflict';
+      session.reason = 'OVERLAPPING_REPLACEMENT';
+      session.conflictsWith = occupants.filter(other => other !== session).map(other => other.original.id);
+    }
+  }
 
   return {
     status: announcements?.status === 'read' && !expansion.unresolved.length && !unresolved.length && !sessions.some(item => item.status === 'conflict')

@@ -114,3 +114,60 @@ test('free-text move links one matching old slot but stays unresolved', () => {
   const ambiguous = resolveLabChanges({ ...expansion, occurrences: [original, { ...original, id: 'other' }] }, post);
   assert.equal(ambiguous.unresolved[0].possibleMove, undefined);
 });
+
+test('moving into an existing same-group slot flags both candidates and preserves evidence', () => {
+  const occupied = { ...occurrence, id: 'occupied', date: '2026-11-12', startTime: '15:00', room: 'another-room' };
+  const result = resolveLabChanges({ ...expansion, occurrences: [occurrence, occupied] }, forum(move));
+  assert.equal(result.status, 'partial');
+  assert.deepEqual(result.sessions.map(session => session.status), ['conflict', 'conflict']);
+  assert.deepEqual(result.sessions.map(session => session.proposedStatus), ['moved', 'timetable']);
+  assert.deepEqual(result.sessions[0].conflictsWith, ['occupied']);
+  assert.deepEqual(result.sessions[1].conflictsWith, ['a']);
+  assert.equal(result.sessions[0].reason, 'OVERLAPPING_REPLACEMENT');
+  assert.equal(result.sessions[0].replacement.date, occupied.date);
+  assert.equal(result.sessions[0].evidence[0].sourceUrl, 'https://example.test/post/0');
+  assert.equal(result.sessions[1].original, occupied);
+});
+
+test('two originals moved into one slot remain conflicting without losing stable identities', () => {
+  const second = { ...occurrence, id: 'second', date: '2026-11-11' };
+  const secondMove = move.replace('2026-11-10 14:00', '2026-11-11 14:00');
+  const original = { ...expansion, occurrences: [occurrence, second] };
+  const result = resolveLabChanges(original, forum(move, secondMove));
+  assert.deepEqual(result.sessions.map(session => session.original.id), ['a', 'second']);
+  assert.ok(result.sessions.every(session => session.status === 'conflict'));
+  assert.deepEqual(resolveLabChanges(original, forum(move, secondMove)), result);
+  assert.equal(occurrence.date, '2026-11-10');
+});
+
+test('other groups and cancelled target slots do not manufacture replacement collisions', () => {
+  const target = { ...occurrence, id: 'target', date: '2026-11-12', startTime: '15:00' };
+  const otherGroup = resolveLabChanges({ ...expansion, occurrences: [occurrence, { ...target, group: 'B' }] }, forum(move));
+  assert.deepEqual(otherGroup.sessions.map(session => session.status), ['moved', 'timetable']);
+  const targetCancel = 'Lab change: cancel | A | 2026-11-12 15:00';
+  const cancelled = resolveLabChanges({ ...expansion, occurrences: [occurrence, target] }, forum(move, targetCancel));
+  assert.deepEqual(cancelled.sessions.map(session => session.status), ['moved', 'cancelled']);
+});
+
+test('invalid or timezone-unknown publication/update timestamps cannot authorize changes', () => {
+  for (const bad of ['not-a-date', '2026-11-09T12:00:00', '2026-02-30T12:00:00Z', '2026-11-09T24:00:00Z']) {
+    for (const field of ['publishedAt', 'updatedAt']) {
+      const announcements = forum(cancel);
+      announcements.posts[0][field] = bad;
+      const result = resolveLabChanges(expansion, announcements);
+      assert.equal(result.status, 'partial');
+      assert.equal(result.sessions[0].status, 'timetable');
+      assert.ok(result.unresolved.some(item => item.reason === 'UNRESOLVED_ANNOUNCEMENT'));
+    }
+  }
+});
+
+test('newer timestamps never silently supersede conflicting dated announcements', () => {
+  const announcements = forum(cancel, move);
+  announcements.posts[1].updatedAt = '2026-11-10T09:00:00Z';
+  const result = resolveLabChanges(expansion, announcements);
+  assert.equal(result.sessions[0].status, 'conflict');
+  assert.equal(result.sessions[0].proposals.length, 2);
+  assert.equal(result.sessions[0].proposals[1].evidence.updatedAt, '2026-11-10T09:00:00Z');
+  assert.equal(resolveLabChanges(expansion, { ...announcements, status: 'partial' }).status, 'partial');
+});
