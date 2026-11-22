@@ -47,6 +47,9 @@ The server finds .env relative to its own project directory, regardless of the c
 
 ## Tools
 
+See [sources, uncertainty and privacy](docs/TRUST_AND_PRIVACY.md) for what each
+tool actually verifies, what remains unknown, and what your AI client receives.
+
 | Tool | Input | Result |
 | --- | --- | --- |
 | list_courses | optional academicYear (YYYY/YYYY), semester (winter/summer) | Enrolled courses, inferred term labels, source URLs, and unresolved-filter count |

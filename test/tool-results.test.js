@@ -22,7 +22,7 @@ test('actual stdio returns bounded safe errors and remains usable after oversize
     const { UserError } = await import(${JSON.stringify(new URL('../src/config.js', import.meta.url).href)});
     Moodle.prototype.getCourse = async id => {
       if (id === 1) return { text: 'x'.repeat(${maxToolResultBytes + 1}) };
-      if (id === 3) throw new Error('PRIVATE_RUNTIME_SENTINEL');
+      if (id === 3) throw new Error('PRIVATE_RUNTIME_SENTINEL PASSWORD_SENTINEL Cookie: COOKIE_SENTINEL Authorization: Bearer AUTH_SENTINEL C:/Users/SYNTHETIC_LOCAL/private');
       if (id === 4) throw new UserError('[CACHE_TEST] Safe fixture failure.');
       if (id === 5) return { value: BigInt(1) };
       if (id === 6) await new Promise(resolve => setTimeout(resolve, 1000));
@@ -41,7 +41,7 @@ test('actual stdio returns bounded safe errors and remains usable after oversize
       const result = await client.callTool({ name: 'get_course', arguments: { courseId } });
       assert.equal(result.isError, true);
       assert.ok(Buffer.byteLength(result.content[0].text) < 500);
-      assert.doesNotMatch(result.content[0].text, /PRIVATE_RUNTIME_SENTINEL/);
+      assert.doesNotMatch(result.content[0].text, /SENTINEL|SYNTHETIC_LOCAL/);
       if (courseId === 1) assert.match(result.content[0].text, /TOOL_OUTPUT_LIMIT/);
       if (courseId === 4) assert.equal(result.content[0].text, '[CACHE_TEST] Safe fixture failure.');
       const next = await client.callTool({ name: 'get_course', arguments: { courseId: 2 } });

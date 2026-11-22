@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Clarify evidence/privacy for every tool category and ask clients to retain source citations, uncertainty and user-declared preference provenance.
+
 - Keep same-group lab move collisions unresolved and require valid publication/update instants before applying structured changes.
 
 - Bound the shared session queue to eight pending actions, skip cancelled queued work, and document all reader/composite resource limits.

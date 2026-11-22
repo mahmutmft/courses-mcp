@@ -1,5 +1,10 @@
 # MCP tool contracts
 
+The [evidence and privacy inventory](TRUST_AND_PRIVACY.md) maps every tool category
+to its actual source/freshness fields or their absence, local-declaration semantics,
+diagnostic tests and client data flow. Initialization guidance asks clients to
+preserve citations/uncertainty, but cannot guarantee an external assistant's wording.
+
 ## Request admission and cancellation
 
 At most eight tool actions may execute/wait on the shared session queue. Overflow
