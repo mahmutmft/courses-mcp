@@ -89,3 +89,33 @@ require manual review.
 A possible prose change can carry statedScope=semester when the announcement explicitly mentions a semester-wide duration. This is a review hint. A live Macedonian announcement verified through the reader mentioned weekday, old and new time and room, and semester duration, with the group and exact effective date absent from the text. Tests use synthetic wording and values.
 
 For the supported Macedonian prose move pattern, possibleMove links a unique original occurrence by weekday, exact time range and room. Its proposedSlot carries the stated weekday, time and room. This is unresolved evidence because the announcement supplies no exact date or group.
+
+### Applicability and conflict policy
+
+Only pass evidence from the authorized same-course discovered news reader. A
+standalone structured row must identify an exact original group/date/start time,
+uniquely, within the requested original-date range. Publication must be a valid
+offset-bearing instant; a present update timestamp must also be valid. Missing,
+malformed, timezone-unknown or reader-warning evidence stays unresolved. Publication
+or update time establishes provenance, not an implicit effective date or a
+"latest post wins" rule. Unknown-group/undated prose never authorizes a change.
+
+Multiple identical proposals retain all citations and one stable original session
+identity. Conflicting proposals are preserved even if one is newer. Structured
+revision rows are all-or-nothing as described above; they do not silently replace
+an entire omitted timetable. Partial/failed forum reads remain partial and cannot
+establish confirmed absence.
+
+After applying candidate moves/cancellations, a move that produces two active
+sessions with the same group, local date, start time and timezone flags both as
+conflict with reason=OVERLAPPING_REPLACEMENT. Each retains original, replacement
+(when present), evidence, proposedStatus and conflictsWith original IDs. Different
+rooms do not remove the collision; another group or a cancelled target does not
+create one. This detects identical-start collisions, not arbitrary overlapping
+intervals or all timezone ambiguities. It does not deduplicate by silently deleting
+either source. Stable IDs and evidence let clients request clarification.
+
+This policy is deliberately bounded to supported structured formats. Arbitrary
+semester prose, attachments and moves from outside the original request range
+remain outside automatic resolution. Review the policy and supported live layouts
+again before v1; do not advertise complete automatic personal schedules yet.

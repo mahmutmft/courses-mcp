@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Keep same-group lab move collisions unresolved and require valid publication/update instants before applying structured changes.
+
 - Bound the shared session queue to eight pending actions, skip cancelled queued work, and document all reader/composite resource limits.
 
 - Lock public tool schemas/annotations with a reviewed stdio inventory and return TOOL_OUTPUT_LIMIT instead of emitting oversized JSON text.
