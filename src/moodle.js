@@ -392,12 +392,16 @@ export class Moodle {
     return attendance === undefined ? this.preferences.get(courseId) : this.preferences.set(courseId, attendance);
   }
 
-  async getWeeklyLabs(courseIds, weekStart, fromDate) {
+  async getWeeklyLabs(courseIds, weekStart, fromDate, evidence = []) {
     const { courses } = await this.listCourses();
     if (courseIds.some(id => !courses.some(course => course.id === id))) {
       throw new UserError('A selected course is not in your enrolled course list.');
     }
-    return collectWeeklyLabs({ courseIds, weekStart, fromDate,
+    return collectWeeklyLabs({ courseIds, weekStart, fromDate, evidence,
+      readEvidence: async ({ courseId, resourceId, forumId }) => ({
+        timetable: await this.getLabTimetable(courseId, resourceId),
+        announcements: await this.getAnnouncements(courseId, forumId),
+      }),
       readSchedule: (courseId, start) => this.getLabSchedule(courseId, start) });
   }
 

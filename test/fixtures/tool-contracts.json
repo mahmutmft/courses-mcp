@@ -439,6 +439,36 @@
           },
           "fromDate": {
             "type": "string"
+          },
+          "evidence": {
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "courseId": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "resourceId": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "forumId": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "courseId",
+                "resourceId",
+                "forumId"
+              ],
+              "additionalProperties": false
+            }
           }
         },
         "required": [
