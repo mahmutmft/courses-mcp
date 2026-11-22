@@ -74,7 +74,7 @@ The server uses stdio. Restart the client connection after updating the checkout
 | get_coursework_deadlines | courseIds, range | Published date fields across selected courses |
 | get_lab_timetable | courseId, resourceId, optional occurrenceRange and announcementForumId | Timetable evidence, optional dated expansion and announcement changes |
 | get_lab_schedule | courseId, weekStart | Dated candidates and term-linked homework for one course |
-| get_weekly_labs | courseIds (1–4), weekStart, optional fromDate within the week | Cross-course dated candidates, undated homework and uncertainty |
+| get_weekly_labs | courseIds (1–4), weekStart, optional fromDate and evidence pairs | Cross-course candidates, scoped answerState, source-backed changes and undated homework |
 | get_lab_preference | courseId | Local attendance preference |
 | set_lab_preference | courseId, attendance | Saves attending or exempt, or clears the record with unknown |
 | get_lab_term_preference | courseId | Local group and term preference |
@@ -163,9 +163,12 @@ exemption state and undated homework. Published dated candidates appear in
 a separate sorted occurrences list. Each course is processed once, sequentially,
 using the existing per-course schedule reader and its request limits.
 
-The overview remains partial until the recurrence and announcement exception
-pipelines are integrated. All-exempt selections return exempt based on the
-student's local declarations. An empty list is insufficient evidence of no lab.
+Legacy status remains partial/exempt for compatibility. Optional evidence pairs
+now integrate selected timetables, recurrence and announcement changes. The
+additive answerState is scheduled, confirmed-none within the selected evidence,
+unknown or user-declared exempt. Definite answers require current complete
+supported evidence and explicit attending/group selection. Empty discovery is
+insufficient evidence of no lab. See [weekly evidence rules](WEEKLY_LABS.md).
 
 Optional fromDate selects an inclusive local calendar date within that same week
 through Sunday. Omission preserves the whole-week behavior. The returned range
