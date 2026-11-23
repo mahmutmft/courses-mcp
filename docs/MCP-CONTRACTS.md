@@ -55,6 +55,7 @@ The server uses stdio. Restart the client connection after updating the checkout
 
 | Tool | Inputs | Result |
 | --- | --- | --- |
+| get_lab_calendar | courseIds (1–4), range (1–31 dates), optional evidence pairs | Read-only civil-date projection with sources, moved/cancelled/conflict flags and uncertainty |
 | start_course_refresh | courseIds (1–4), optional documents (up to 3) | Creates private refresh progress without fetching documents |
 | get_course_refresh | No inputs | Account-scoped progress counts/state after current access checks |
 | advance_course_refresh | Optional action (next, cancel, resume; default next) | One-course refresh/checkpoint or between-call cancellation/resumption |
@@ -93,7 +94,7 @@ The two preference setters, clear_course_cache and start/advance_course_refresh 
 ## Reviewed schema inventory and compatibility
 
 [The machine-readable inventory](../test/fixtures/tool-contracts.json) records all
-24 tools' input schemas, required/optional fields, defaults and annotations as
+25 tools' input schemas, required/optional fields, defaults and annotations as
 discovered over actual stdio. The contractVersion field versions this inventory's
 format, not the package or a published v1 API. The current package is pre-v1.
 The protocol test compares every tool to it and verifies this table's tool names.
@@ -155,6 +156,9 @@ For search_courses, truncated is true when ranked matches exceed the requested r
 search_courses returns status=read when all selected evidence was read within the supported scope, or partial when coverage is incomplete. matchStatus is found when at least one indexed snippet matches, no_match when complete selected evidence has no hits, and unknown when incomplete evidence has no hits. Unselected files remain outside the stated scope.
 
 ## Weekly lab overview
+
+For a read-only weekly/monthly projection of this evidence, use
+[get_lab_calendar](LAB_CALENDAR.md); it does not write external events.
 
 get_weekly_labs accepts 1–4 explicit enrolled course IDs and weekStart as a
 Monday in YYYY-MM-DD format. It returns the whole Monday–Sunday week in

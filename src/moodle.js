@@ -1,4 +1,5 @@
 import { collectWeeklyLabs } from './weekly-labs.js';
+import { collectLabCalendar } from './lab-calendar.js';
 import { RefreshJob } from './refresh-jobs.js';
 import { filterCourseList } from './courses.js';
 import { createHash } from 'node:crypto';
@@ -392,16 +393,42 @@ export class Moodle {
     return attendance === undefined ? this.preferences.get(courseId) : this.preferences.set(courseId, attendance);
   }
 
-  async getWeeklyLabs(courseIds, weekStart, fromDate, evidence = []) {
+  async getLabCalendar(courseIds, range, evidence = []) {
+    const initial = await this.listCourses();
+    if (courseIds.some(id => !initial.courses.some(course => course.id === id))) {
+      throw new UserError('A selected course is not in your enrolled course list.');
+    }
+    const sourceReads = new Map();
+    const readEvidence = source => {
+      const key = JSON.stringify(source);
+      if (!sourceReads.has(key)) sourceReads.set(key, (async () => ({
+        timetable: await this.getLabTimetable(source.courseId, source.resourceId),
+        announcements: await this.getAnnouncements(source.courseId, source.forumId),
+      }))());
+      return sourceReads.get(key);
+    };
+    const result = await collectLabCalendar({ range,
+      readWeek: start => this.getWeeklyLabs(courseIds, start, undefined, evidence, readEvidence) });
+    if (result.warnings.some(warning => ['CALENDAR_WEEK_UNAVAILABLE', 'CALENDAR_SOURCE_UNAVAILABLE'].includes(warning))) {
+      throw new UserError('Calendar refresh was interrupted (CALENDAR_REFRESH_UNAVAILABLE). Check the connection/access before explicitly retrying.');
+    }
+    const { courses } = await this.listCourses();
+    if (courseIds.some(id => !courses.some(course => course.id === id))) {
+      throw new UserError('A selected course is not in your enrolled course list.');
+    }
+    return result;
+  }
+
+  async getWeeklyLabs(courseIds, weekStart, fromDate, evidence = [], evidenceReader) {
     const { courses } = await this.listCourses();
     if (courseIds.some(id => !courses.some(course => course.id === id))) {
       throw new UserError('A selected course is not in your enrolled course list.');
     }
     return collectWeeklyLabs({ courseIds, weekStart, fromDate, evidence,
-      readEvidence: async ({ courseId, resourceId, forumId }) => ({
+      readEvidence: evidenceReader ?? (async ({ courseId, resourceId, forumId }) => ({
         timetable: await this.getLabTimetable(courseId, resourceId),
         announcements: await this.getAnnouncements(courseId, forumId),
-      }),
+      })),
       readSchedule: (courseId, start) => this.getLabSchedule(courseId, start) });
   }
 

@@ -24,6 +24,14 @@ const server = new McpServer({ name: 'finki-courses', version: packageInfo.versi
 });
 const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true };
 const courseId = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
+register('get_lab_calendar', 'Project weekly lab evidence into a read-only civil-date calendar for 1–31 inclusive dates and up to four explicit courses. Keeps original IDs, sources, null end times, cancelled/moved status, conflicts and uncertain entries. Optional evidence selects one discovered timetable/news pair per course. No external calendar writes, UTC instant inference or absence claims from empty data.', {
+  courseIds: z.array(courseId).min(1).max(4),
+  range: z.object({ from: z.string(), through: z.string() }).refine(isOccurrenceRange, 'Use an inclusive range of 1 to 31 valid dates.'),
+  evidence: z.array(z.object({ courseId, resourceId: courseId, forumId: courseId }).strict()).max(4).optional(),
+}, ({ courseIds, range, evidence }) => {
+  validateWeeklyEvidence(courseIds, evidence);
+  return moodle.getLabCalendar(courseIds, range, evidence);
+});
 const refreshAnnotations = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true };
 register('start_course_refresh', 'Start a private local refresh job for up to four explicit enrolled courses and three selected HTML/PDF documents. Requires opt-in search caching. Stores IDs/progress only, does not fetch documents yet. Existing ready jobs must be finished or cancelled. No Moodle writes or background polling.', refreshSelection,
   args => moodle.courseRefresh('start', args), refreshAnnotations);

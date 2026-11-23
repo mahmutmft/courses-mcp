@@ -8,11 +8,12 @@ Clients can ignore that guidance, so inspect the actual tool result when in doub
 
 ## Evidence inventory
 
-This covers the current 24 tools. Field names describe the actual contracts; a
+This covers the current 25 tools. Field names describe the actual contracts; a
 missing field is not an invitation to invent a timestamp or Moodle citation.
 
 | Tools | Source and freshness | Interpretation and evidence tests |
 | --- | --- | --- |
+| `get_lab_calendar` | Event sources/check times, original/moved evidence and per-week freshness/uncertainty. | Projection only; missing timezones/end times remain unknown, cancelled entries stay visible. test/lab-calendar.test.js |
 | `list_courses` | Returned course URLs; classificationSource explains label inference. No universal checkedAt field. | Enrolled list/naming metadata, not official current-semester inference. Pagination/unknown labels stay visible. test/courses.test.js, test/moodle.test.js |
 | `get_course`, `search_course` | Course/section/resource URLs and hit URLs; no universal checkedAt field. | Current discovery/visible-page text only. Preserve traversal/truncation warnings; no hidden file search. test/sections.test.js |
 | `search_courses` | Hit url, page (null for non-PDF), checkedAt; coverage sources, status and selection. | Unknown/partial selected scope is not no_match. Cache reuse still checks live evidence; unselected documents remain unsearched. test/sections.test.js, test/course-index.test.js |

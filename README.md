@@ -63,6 +63,7 @@ tool actually verifies, what remains unknown, and what your AI client receives.
 | get_assignment | courseId, assignmentId (numeric module ID) | Assignment description and published opening/due/cutoff fields; no submissions or grades |
 | get_lab_schedule | courseId, weekStart (Monday YYYY-MM-DD) | Published dated lab matches and group homework linked to your saved presentation term; explicit uncertainty |
 | get_weekly_labs | courseIds, weekStart, optional fromDate/evidence | Weekly candidates with selected timetable/news resolution, explicit answer states and uncertainty |
+| get_lab_calendar | courseIds, inclusive range (1–31 dates), optional evidence | Read-only weekly/monthly projection with sources and moved/cancelled/uncertain entries |
 | get_lab_term_preference | courseId | Local user-declared group/term labels, selected choice ID and update time |
 | set_lab_term_preference | courseId, term (object or null) | Explicit full replacement/reset of private term preferences; never votes in Moodle |
 | get_lab_preference | courseId | Local user-declared attending/exempt/unknown preference |
@@ -73,6 +74,7 @@ Example: ask your agent to list your courses, then search a selected course for 
 
 For weekly labs using explicitly selected timetable/news evidence, see
 [weekly lab answers](docs/WEEKLY_LABS.md). An empty result never establishes no labs.
+Use [the lab calendar projection](docs/LAB_CALENDAR.md) for a weekly or monthly date view.
 
 For explicit resumable index refresh with local caching enabled, see
 [refresh jobs](docs/REFRESH_JOBS.md). Progress survives normal restart; no
