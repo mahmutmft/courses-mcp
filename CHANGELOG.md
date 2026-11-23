@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a read-only weekly/monthly lab calendar projection with stable event IDs, source evidence, cancelled/moved entries and explicit uncertainty.
+
 - Resolve selected weekly timetable/news evidence into scoped scheduled/cancelled/unknown answers while preserving exemptions, freshness and undated homework.
 
 - Clarify evidence/privacy for every tool category and ask clients to retain source citations, uncertainty and user-declared preference provenance.

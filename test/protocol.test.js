@@ -20,6 +20,14 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
   try {
     await client.connect(transport);
     assert.equal(client.getServerVersion()?.version, packageInfo.version);
+    for (const arguments_ of [
+      { courseIds: [42], range: { from: '2026-11-01', through: '2026-12-02' } },
+      { courseIds: [42], range: { from: '2026-11-01', through: '2026-11-07' }, evidence: [{ courseId: 43, resourceId: 7, forumId: 8 }] },
+    ]) {
+      const invalid = await client.callTool({ name: 'get_lab_calendar', arguments: arguments_ });
+      assert.equal(invalid.isError, true);
+      assert.doesNotMatch(invalid.content[0].text, /Fill MOODLE_USERNAME/);
+    }
     for (const evidence of [
       [{ courseId: 43, resourceId: 7, forumId: 8 }],
       [{ courseId: 42, resourceId: 7, forumId: 8 }, { courseId: 42, resourceId: 9, forumId: 10 }],
@@ -60,7 +68,7 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
     const documentation = readFileSync(new URL('../docs/MCP-CONTRACTS.md', import.meta.url), 'utf8');
     const documented = [...documentation.matchAll(/^\| ([a-z_]+) \|/gm)].map(match => match[1]).sort();
     assert.deepEqual(documented, tools.map(tool => tool.name).sort());
-    assert.deepEqual(tools.map(tool => tool.name).sort(), ['advance_course_refresh', 'clear_course_cache', 'get_announcements', 'get_assignment', 'get_choice_selection', 'get_course', 'get_course_cache', 'get_course_refresh', 'get_coursework_deadlines', 'get_folder', 'get_lab_preference', 'get_lab_schedule', 'get_lab_term_preference', 'get_lab_timetable', 'get_quiz', 'get_weekly_labs', 'list_courses', 'read_folder_file', 'read_resource', 'search_course', 'search_courses', 'set_lab_preference', 'set_lab_term_preference', 'start_course_refresh']);
+    assert.deepEqual(tools.map(tool => tool.name).sort(), ['advance_course_refresh', 'clear_course_cache', 'get_announcements', 'get_assignment', 'get_choice_selection', 'get_course', 'get_course_cache', 'get_course_refresh', 'get_coursework_deadlines', 'get_folder', 'get_lab_calendar', 'get_lab_preference', 'get_lab_schedule', 'get_lab_term_preference', 'get_lab_timetable', 'get_quiz', 'get_weekly_labs', 'list_courses', 'read_folder_file', 'read_resource', 'search_course', 'search_courses', 'set_lab_preference', 'set_lab_term_preference', 'start_course_refresh']);
     for (const arguments_ of [
       { courseIds: Array.from({ length: 11 }, (_, i) => i + 1), range: { from: '2026-11-01', through: '2026-11-02' } },
       { courseIds: [42], range: { from: '2026-11-01', through: '2026-12-02' } },

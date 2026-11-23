@@ -1,6 +1,6 @@
 # Request and resource-limit audit
 
-Scope: current pre-v1 implementation, including all 24 public tools, refresh jobs
+Scope: current pre-v1 implementation, including all 25 public tools, refresh jobs
 and local storage. This is an implementation audit and regression inventory, not
 the independent security review (#48) or a production stress test. Reconcile it
 when adding adapters/tools and on the final v1 candidate.
@@ -30,6 +30,7 @@ for byte/time caps and [contracts](MCP-CONTRACTS.md) for current schemas/default
 
 | Public tools | Bounded work and cleanup |
 | --- | --- |
+| `get_lab_calendar` | Inclusive 1–31 civil dates, at most six weekly projections/four courses. Timetable/news evidence shared only within the request, at most one read/pair. Final freshness/enrollment checks; source failure stops further weeks without automatic login retries. No new whole-month deadline; 1 MiB output cap applies. |
 | `list_courses` | 100 pages × 100 items; pagination budget 30 seconds after authentication; each streamed API response at most 2 MiB/10 seconds. Repeated/nonadvancing cursors terminate with truncation. |
 | `get_course`, `search_course` | Course traversal at most 20 logical pages in batches of four, 30 seconds, 4 MiB processed HTML/page, 200 sections/1,000 resources. Redirect/ownership checks and response disposal; search at most 100 hits. |
 | `read_resource` | Selected discovered HTML or PDF only. HTML five hops/15 seconds/2 MiB processed response, text 20,000 characters; PDF bounds below. |
