@@ -25,7 +25,8 @@ Node.js >=24, JavaScript ES modules, npm lockfile. The official MCP SDK v1 handl
 - src/pdf.js and src/pdf-worker.js: terminable PDF.js extraction with page/text limits; no OCR or schedule inference.
 - src/sections.js: same-course section discovery, redirect/ownership validation, bounded traversal, merging and safe partial-coverage warnings. Authenticated requests share the browser context's in-memory cookies.
 - src/courses.js: optional list_courses filter schema and academic-year/semester label inference. Filters apply after enrolled pagination; get_course authorization still uses the complete enrollment list.
-- src/index.js: stdio MCP tools; src/doctor.js: live aggregate-only login diagnostic.
+- src/server.js: production MCP tool registration factory, shared by the stdio entry point and synthetic SDK workflow integration tests. No environment-controlled fixture mode.
+- src/index.js: stdio startup and lifecycle; src/doctor.js: live aggregate-only login diagnostic.
 - test/: offline parser/config tests and MCP stdio integration smoke test.
 - .github/: issue/PR templates, ownership, CI/security workflows.
 - .env.example: tracked blank configuration; .env: ignored local credentials.
@@ -112,3 +113,5 @@ Issue #33 adds src/scheduling/lab-changes.js and optional announcementForumId on
 Issue #42 adds get_quiz(courseId, quizId). It shares the assignment activity-date parser and bounded HTML fetch, with a separate quiz label set and strict course and quiz module identity. It reads the canonical discovered quiz view only and returns the introduction, published opening/closing dates, source, and warnings. Attempt and review routes are excluded. Display dates without offsets retain unknown timezone. The output concerns coursework timing.
 
 Issue #43 adds get_coursework_deadlines(courseIds, range) for 1–10 explicit enrolled course IDs and 1–31 inclusive YYYY-MM-DD dates. One enrollment lookup precedes a 45-second discovery/metadata budget, with up to 6 seconds per course discovery and 24 unique activity reads at up to 5 seconds each. The range uses each published local calendar date and retains original timezone certainty and source check times. Unknown fields and incomplete coverage are reported. Personal extensions, completion and lab presentation dates are outside this lookup.
+
+Integrated student workflow coverage and remaining final-candidate live checks are recorded in [STUDENT_WORKFLOWS.md](STUDENT_WORKFLOWS.md).

@@ -88,3 +88,5 @@ and evidence becoming stale during later course reads. Adapter tests exercise th
 current authorized readers; stdio tests verify input validation and the additive
 schema inventory. No private faculty material is committed. Final live student
 workflow verification remains #125, and independent security review remains #48.
+
+The [student workflow acceptance matrix](STUDENT_WORKFLOWS.md) links cross-tool SDK integration scenarios and MK/EN examples to actual tests, and distinguishes offline evidence from the outstanding final-candidate live check.

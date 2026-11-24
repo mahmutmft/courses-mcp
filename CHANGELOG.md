@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Exercise semester/group, weekly lab, calendar and saved-schedule workflows through the production MCP registration with synthetic SDK integration tests; document the supported scenarios and outstanding final-candidate live acceptance.
+
 - Add explicit private semester/group timetable save, reuse and clear tools, retaining original verification times and freshly checking selected announcements without reopening course pages or polls.
 
 - Add a read-only weekly/monthly lab calendar projection with stable event IDs, source evidence, cancelled/moved entries and explicit uncertainty.
