@@ -217,3 +217,14 @@ These steps are not prerequisites for documentation contributions or synthetic o
 Never commit credentials, tokens, session data, or private course information. Never share private faculty materials in issues, pull requests, commits, or test fixtures.
 
 Thank you for helping improve courses-mcp!
+
+## Contribution license
+
+New contributions to this licensed repository are submitted under GNU GPL version 3
+only (`GPL-3.0-only`), unless a separate agreement explicitly says otherwise.
+Contribute only work you have the right to license on these terms and preserve
+existing copyright and third-party license notices. You retain copyright in your
+contributions; contributing does not transfer ownership to the maintainer.
+See [LICENSE](LICENSE) and the [project licensing notice](LICENSE-NOTE.md).
+This statement does not retroactively obtain permission for contributions made
+before the repository adopted a license.

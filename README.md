@@ -244,3 +244,12 @@ Fetch policy: exact discovered canonical assignment URL only, one GET, no redire
 ## Report an unsupported layout
 
 If a Moodle page cannot be read, use the [unsupported-layout form](https://github.com/mahmutmft/courses-mcp/issues/new?template=unsupported_layout.yml) and [safe reporting guide](docs/REPORTING_LAYOUTS.md). Share only generic or fictional structure descriptions and safe codes; do not upload private course content, screenshots, credentials or full tool output.
+
+## License
+
+Copyright (C) 2026 mahmutmft. Other contributors retain copyright in their contributions.
+
+Licensed under the **GNU General Public License, version 3 only**
+(`GPL-3.0-only`). See [LICENSE](LICENSE) for the complete terms and
+[LICENSE-NOTE.md](LICENSE-NOTE.md) for the project notice and scope.
+Project founder and maintainer: [mahmutmft](https://github.com/mahmutmft).
