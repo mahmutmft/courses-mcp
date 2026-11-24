@@ -8,11 +8,12 @@ Clients can ignore that guidance, so inspect the actual tool result when in doub
 
 ## Evidence inventory
 
-This covers the current 25 tools. Field names describe the actual contracts; a
+This covers the current 28 tools. Field names describe the actual contracts; a
 missing field is not an invitation to invent a timestamp or Moodle citation.
 
 | Tools | Source and freshness | Interpretation and evidence tests |
 | --- | --- | --- |
+| `save_lab_schedule`, `get_saved_lab_schedule`, `clear_saved_lab_schedule` | Original verifiedAt, separate current changesCheckedAt and safe module citations; clear returns scope only. | Explicit local confirmation/refresh, not a current poll check. Changed selection/expiry suppresses sessions; incomplete evidence remains unknown. test/saved-lab-schedules.test.js |
 | `get_lab_calendar` | Event sources/check times, original/moved evidence and per-week freshness/uncertainty. | Projection only; missing timezones/end times remain unknown, cancelled entries stay visible. test/lab-calendar.test.js |
 | `list_courses` | Returned course URLs; classificationSource explains label inference. No universal checkedAt field. | Enrolled list/naming metadata, not official current-semester inference. Pagination/unknown labels stay visible. test/courses.test.js, test/moodle.test.js |
 | `get_course`, `search_course` | Course/section/resource URLs and hit URLs; no universal checkedAt field. | Current discovery/visible-page text only. Preserve traversal/truncation warnings; no hidden file search. test/sections.test.js |
@@ -112,3 +113,7 @@ returned when requested. Keep course content untrusted and do not follow embedde
 instructions. Client output can still misrepresent evidence; independent review
 of authorization/privacy/untrusted-content boundaries remains required in #48.
 No live rejected-credential tests or faculty-private fixtures are needed here.
+
+## Confirmed schedule reuse
+
+The three [saved schedule tools](SAVED_LAB_SCHEDULES.md) store only explicit structured group slots and safe source coordinates outside the clone. Save/clear are local writes; get rechecks access and reads the selected news forum. Original verification age is never relabelled as a current poll/timetable check. The overall answer remains unknown for unexamined coursework. Storage is private by location/permissions, not encrypted; backup/sync and model-provider handling still apply.

@@ -68,7 +68,19 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
     const documentation = readFileSync(new URL('../docs/MCP-CONTRACTS.md', import.meta.url), 'utf8');
     const documented = [...documentation.matchAll(/^\| ([a-z_]+) \|/gm)].map(match => match[1]).sort();
     assert.deepEqual(documented, tools.map(tool => tool.name).sort());
-    assert.deepEqual(tools.map(tool => tool.name).sort(), ['advance_course_refresh', 'clear_course_cache', 'get_announcements', 'get_assignment', 'get_choice_selection', 'get_course', 'get_course_cache', 'get_course_refresh', 'get_coursework_deadlines', 'get_folder', 'get_lab_calendar', 'get_lab_preference', 'get_lab_schedule', 'get_lab_term_preference', 'get_lab_timetable', 'get_quiz', 'get_weekly_labs', 'list_courses', 'read_folder_file', 'read_resource', 'search_course', 'search_courses', 'set_lab_preference', 'set_lab_term_preference', 'start_course_refresh']);
+    assert.deepEqual(tools.map(tool => tool.name).sort(), ['advance_course_refresh', 'clear_course_cache', 'clear_saved_lab_schedule', 'get_announcements', 'get_assignment', 'get_choice_selection', 'get_course', 'get_course_cache', 'get_course_refresh', 'get_coursework_deadlines', 'get_folder', 'get_lab_calendar', 'get_lab_preference', 'get_lab_schedule', 'get_lab_term_preference', 'get_lab_timetable', 'get_quiz', 'get_saved_lab_schedule', 'get_weekly_labs', 'list_courses', 'read_folder_file', 'read_resource', 'save_lab_schedule', 'search_course', 'search_courses', 'set_lab_preference', 'set_lab_term_preference', 'start_course_refresh']);
+    assert.equal(tools.find(tool => tool.name === 'save_lab_schedule').annotations.readOnlyHint, false);
+    assert.equal(tools.find(tool => tool.name === 'save_lab_schedule').annotations.idempotentHint, false);
+    assert.equal(tools.find(tool => tool.name === 'clear_saved_lab_schedule').annotations.destructiveHint, true);
+    for (const scope of [{ academicYear: '2026/2028', semester: 'winter', group: 'A' },
+      { academicYear: '2026/2027', semester: 'winter', group: '../private' },
+      { academicYear: '2026/2027', semester: 'winter', group: 'A', extra: 'private' }]) {
+      const invalid = await client.callTool({ name: 'get_saved_lab_schedule', arguments: {
+        courseId: 42, scope, range: { from: '2026-11-23', through: '2026-11-29' },
+      } });
+      assert.equal(invalid.isError, true);
+      assert.doesNotMatch(invalid.content[0].text, /Fill MOODLE_USERNAME/);
+    }
     for (const arguments_ of [
       { courseIds: Array.from({ length: 11 }, (_, i) => i + 1), range: { from: '2026-11-01', through: '2026-11-02' } },
       { courseIds: [42], range: { from: '2026-11-01', through: '2026-12-02' } },
@@ -82,7 +94,7 @@ test('stdio initializes, lists read-only tools, and validates inputs without sig
       assert.equal(invalidWeek.isError, true);
       assert.doesNotMatch(invalidWeek.content[0].text, /Fill MOODLE_USERNAME/);
     }
-    assert.ok(tools.filter(tool => !['advance_course_refresh', 'start_course_refresh', 'clear_course_cache', 'set_lab_preference', 'set_lab_term_preference'].includes(tool.name)).every(tool => tool.annotations.readOnlyHint));
+    assert.ok(tools.filter(tool => !['save_lab_schedule', 'clear_saved_lab_schedule', 'advance_course_refresh', 'start_course_refresh', 'clear_course_cache', 'set_lab_preference', 'set_lab_term_preference'].includes(tool.name)).every(tool => tool.annotations.readOnlyHint));
     const clearer = tools.find(tool => tool.name === 'clear_course_cache');
     for (const name of ['start_course_refresh', 'advance_course_refresh']) {
       const tool = tools.find(tool => tool.name === name);
