@@ -1,0 +1,123 @@
+name: Unsupported Moodle layout
+description: Report a course or activity layout that the MCP cannot read, without sharing private content.
+title: "[LAYOUT] "
+labels: ["type:bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This report will be public. Describe the page structure using fictional examples.
+        Do not upload course PDFs, HTML/page source, screenshots, full tool output, browser logs,
+        .env files, credentials, cookies, tokens, student names/indices, grades, or personal paths.
+        Do not paste course/activity URLs or private material. A generic route such as
+        /mod/resource/view.php?id=<redacted> is enough. Do not bypass access restrictions.
+        For security concerns, follow [SECURITY.md](https://github.com/mahmutmft/courses-mcp/blob/master/SECURITY.md)
+        instead of publishing exploit details or sensitive data here.
+
+        See the [safe reporting guide](https://github.com/mahmutmft/courses-mcp/blob/master/docs/REPORTING_LAYOUTS.md).
+  - type: input
+    id: tool
+    attributes:
+      label: MCP tool
+      description: Copy only the tool name, not its arguments or full response.
+      placeholder: read_resource
+    validations:
+      required: true
+  - type: dropdown
+    id: content_type
+    attributes:
+      label: Content type
+      options:
+        - Course main page
+        - Course section page
+        - HTML resource or page
+        - Text PDF
+        - Scanned PDF or image
+        - Folder
+        - Choice activity (saved selection)
+        - Announcement forum
+        - Assignment metadata
+        - Quiz metadata
+        - Other or unknown
+    validations:
+      required: true
+  - type: dropdown
+    id: language
+    attributes:
+      label: Page language
+      description: The Moodle page language, not the language used to chat with your assistant.
+      options:
+        - Macedonian
+        - English
+        - Mixed Macedonian and English
+        - Other or unknown
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Package version or Git commit only. Do not paste a terminal prompt or filesystem path.
+      placeholder: "0.1.0 or a commit SHA"
+    validations:
+      required: true
+  - type: input
+    id: diagnostic
+    attributes:
+      label: Sanitized diagnostic code
+      description: Copy only a fixed uppercase code from warnings/errors. Write NONE if no code is available; do not paste the message, source URL, or response.
+      placeholder: UNSUPPORTED_FORUM_POST_LAYOUT
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior and generic layout
+      description: Describe the structure and whether the result was unsupported, partial, empty, or an error. Replace all content with invented text; do not attach original material.
+      placeholder: "Fictional example: a news post has its title above a two-column table. The tool returns a partial result without the post text."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Explain the read-only result you expected. Do not quote private course text.
+      placeholder: "Read the starter post with a source citation, or explain which part of this layout is unsupported."
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Safe reproduction steps
+      description: Use generic navigation and invented content only. No real course names, IDs, URLs, selected poll labels, or credentials are needed.
+      placeholder: |
+        1. Open an enrolled course's announcement activity.
+        2. Ask get_announcements to read that activity.
+        3. Observe the safe diagnostic code above.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment (optional)
+      description: OS, Node version and MCP client/version only. Do not paste configuration, logs or paths.
+      placeholder: "Windows; Node 24; MCP client name and version"
+  - type: markdown
+    attributes:
+      value: |
+        **Fictional example, not a real faculty report:**
+        Tool: get_announcements. Content type: Announcement forum. Page language: English.
+        Code: UNSUPPORTED_FORUM_POST_LAYOUT. Observed: the starter post uses a table
+        instead of the supported header/content structure. Expected: a readable starter
+        post or a precise unsupported-layout warning. No original page or student data is needed.
+
+        Maintainers should reproduce the structure with a new synthetic fixture before
+        changing a parser. A layout report does not promise support for scanned PDFs/OCR,
+        quiz attempts, grades, submissions, participant lists or other unsupported content.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Public-report privacy check
+      options:
+        - label: I reviewed every field and included only generic or fictional descriptions and safe diagnostics, without private course content, attachments, credentials, personal data or paths.
+          required: true

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a dedicated unsupported-Moodle-layout issue form and fictional reporting guide, with privacy reminders and safe diagnostic fields.
+
 - Exercise semester/group, weekly lab, calendar and saved-schedule workflows through the production MCP registration with synthetic SDK integration tests; document the supported scenarios and outstanding final-candidate live acceptance.
 
 - Add explicit private semester/group timetable save, reuse and clear tools, retaining original verification times and freshly checking selected announcements without reopening course pages or polls.
