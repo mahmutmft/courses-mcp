@@ -1,7 +1,10 @@
 import { collectWeeklyLabs } from './weekly-labs.js';
 import { collectLabCalendar } from './lab-calendar.js';
+import { SavedLabSchedules, preferenceSignature, projectSavedSchedule, savedScheduleScope } from './saved-lab-schedules.js';
+import { isFreshWeeklySource } from './weekly-evidence.js';
+import { isOccurrenceRange } from './scheduling/occurrences.ts';
 import { RefreshJob } from './refresh-jobs.js';
-import { filterCourseList } from './courses.js';
+import { filterCourseList, courseTerm } from './courses.js';
 import { createHash } from 'node:crypto';
 import { CourseCache } from './course-cache.js';
 import { buildCourseIndex, decodeCourseIndex, rankCourseIndexes } from './course-index.js';
@@ -26,11 +29,12 @@ const CAS = 'https://cas.finki.ukim.mk';
 export const maxQueuedOperations = 8;
 
 export class Moodle {
-  constructor(config, { launchBrowser = () => chromium.launch({ headless: true }), preferences = new LabPreferences(config), termPreferences = new LabTermPreferences(config) } = {}) {
+  constructor(config, { launchBrowser = () => chromium.launch({ headless: true }), preferences = new LabPreferences(config), termPreferences = new LabTermPreferences(config), savedSchedules = scope => new SavedLabSchedules(config, scope) } = {}) {
     this.config = config;
     this.launchBrowser = launchBrowser;
     this.preferences = preferences;
     this.termPreferences = termPreferences;
+    this.savedSchedules = savedSchedules;
     this.queue = Promise.resolve();
     this.pendingOperations = 0;
   }
@@ -342,6 +346,74 @@ export class Moodle {
 
   async getLabTimetable(courseId, resourceId) {
     return extractTimetable(await this.readResource(courseId, resourceId));
+  }
+
+  async savedLabSchedule(action, { courseId, scope, range, resourceId, forumId, weekStart }) {
+    scope = savedScheduleScope.parse(scope);
+    if (action === 'read' && !isOccurrenceRange(range)) throw new UserError('Use an inclusive range of 1 to 31 dates.');
+    if (action === 'save' && !isMonday(weekStart)) throw new UserError('Use a valid Monday.');
+    const authorize = async () => {
+      const { courses } = await this.listCourses();
+      const course = courses.find(value => value.id === courseId);
+      if (!course) throw new UserError('Course is not in your enrolled course list.');
+      const known = courseTerm(course);
+      if (action !== 'clear' && Object.entries(known).some(([key, value]) => value !== null && scope[key] !== value)) {
+        throw new UserError('Saved schedule semester does not match the course labels (SCHEDULE_SCOPE_MISMATCH).');
+      }
+    };
+    await authorize();
+    const storage = this.savedSchedules(scope);
+    if (action === 'clear') return storage.clear(courseId);
+    const attendance = await this.preferences.get(courseId);
+    const term = await this.termPreferences.getTerm(courseId);
+    const signature = preferenceSignature(attendance, term);
+    if (action === 'save') {
+      const schedule = await this.getLabSchedule(courseId, weekStart);
+      if (schedule.attendance !== 'attending' || schedule.termResolution?.status !== 'resolved' ||
+        schedule.selectionSource?.term?.group !== scope.group || !isFreshWeeklySource(schedule.checkedAt, Date.now())) {
+        throw new UserError('Confirm attending status and resolve the selected group before saving (SCHEDULE_SELECTION_UNRESOLVED).');
+      }
+      const timetable = await this.getLabTimetable(courseId, resourceId);
+      const announcements = await this.getAnnouncements(courseId, forumId);
+      const warnings = timetable.coverage?.warnings ?? [];
+      if (timetable.status === 'unsupported' || (timetable.coverage?.partial &&
+        (!warnings.length || warnings.some(warning => warning !== 'UNRESOLVED_TIMETABLE_FIELDS'))) || announcements.status !== 'read') {
+        throw new UserError('Complete supported timetable/news evidence is required (SCHEDULE_EVIDENCE_INCOMPLETE).');
+      }
+      const entries = timetable.entries.filter(value => value.group === scope.group).map(value => {
+        const { status: _status, ...fields } = value;
+        return { ...fields, sources: value.sources.map(ref => {
+          const { resolvedUrl: _resolved, ...source } = ref;
+          return source;
+        }) };
+      });
+      await authorize();
+      if (signature !== preferenceSignature(await this.preferences.get(courseId), await this.termPreferences.getTerm(courseId))) {
+        throw new UserError('Local selection changed while verifying (SCHEDULE_SELECTION_CHANGED).');
+      }
+      return storage.save(courseId, { resourceId, forumId, entries, verifiedAt: timetable.checkedAt,
+        initialChangesCheckedAt: announcements.checkedAt, preferenceSignature: signature });
+    }
+    const stored = await storage.read(courseId, signature);
+    if (stored.status !== 'stored') return { ...stored, answerState: 'unknown', scope, sessions: [] };
+    if (attendance.attendance !== 'attending') return { status: 'selection_changed', answerState: 'unknown', scope, sessions: [] };
+    // A previously verified forum ID is a locator only. The reader still checks current course/module ownership.
+    const forum = { id: courseId, sections: [{ resources: [{ url:
+      `https://courses.finki.ukim.mk/mod/forum/view.php?id=${stored.record.forumId}` }] }] };
+    let announcements = null;
+    try { announcements = await readAnnouncements({ request: this.page.context().request, course: forum, forumId: stored.record.forumId }); }
+    catch { /* Return stored candidates as unverified; never reuse an old cancellation check. */ }
+    await authorize();
+    if (signature !== preferenceSignature(await this.preferences.get(courseId), await this.termPreferences.getTerm(courseId))) {
+      return { status: 'selection_changed', answerState: 'unknown', scope, sessions: [] };
+    }
+    // Recheck TTL after the network read so an expired record cannot be returned at the boundary.
+    const final = await storage.read(courseId, signature);
+    if (final.status !== 'stored') return { status: final.status, answerState: 'unknown', scope, sessions: [] };
+    if (JSON.stringify(final.record) !== JSON.stringify(stored.record)) {
+      return { status: 'snapshot_changed', answerState: 'unknown', scope, sessions: [] };
+    }
+    return projectSavedSchedule(final.record, range, announcements);
   }
 
   async getCourseworkDeadlines(courseIds, range) {

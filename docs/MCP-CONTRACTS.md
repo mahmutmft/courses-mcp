@@ -55,6 +55,9 @@ The server uses stdio. Restart the client connection after updating the checkout
 
 | Tool | Inputs | Result |
 | --- | --- | --- |
+| save_lab_schedule | courseId, scope (academicYear, semester, group), resourceId, forumId, weekStart | Explicit fresh verification and private snapshot write |
+| get_saved_lab_schedule | courseId, scope, range (1-31 dates) | Stored candidates and fresh news changes; separate verification times, unknown overall coverage |
+| clear_saved_lab_schedule | courseId, scope | Explicit scoped private deletion |
 | get_lab_calendar | courseIds (1–4), range (1–31 dates), optional evidence pairs | Read-only civil-date projection with sources, moved/cancelled/conflict flags and uncertainty |
 | start_course_refresh | courseIds (1–4), optional documents (up to 3) | Creates private refresh progress without fetching documents |
 | get_course_refresh | No inputs | Account-scoped progress counts/state after current access checks |
@@ -89,12 +92,12 @@ Where available, sourceUrl or per-item sources identify evidence. checkedAt reco
 
 Search queries accept up to 200 characters. search_course returns at most 100 matches (default 30); search_courses returns at most 30 (default 10). Coursework deadline lookup accepts up to 10 course IDs and reads at most 24 activities. Other readers apply tool-specific page, text and traversal limits. See [README](../README.md), [folder contracts](FOLDERS.md) and [timetable contracts](TIMETABLES.md).
 
-The two preference setters, clear_course_cache and start/advance_course_refresh are local writes. Invoke writes only for an explicit user request. clear_course_cache is destructive and idempotent; preference setters are idempotent; refresh start/advance are non-idempotent. All other tools are annotated read-only. Moodle access remains read-only.
+The preference setters, clear_course_cache, save_lab_schedule, clear_saved_lab_schedule and start/advance_course_refresh are local writes. Invoke writes only for an explicit user request. Both clear tools are destructive and idempotent; preference setters are idempotent; save and refresh start/advance are non-idempotent. All other tools are annotated read-only. Moodle access remains read-only. See [saved schedule contracts](SAVED_LAB_SCHEDULES.md).
 
 ## Reviewed schema inventory and compatibility
 
 [The machine-readable inventory](../test/fixtures/tool-contracts.json) records all
-25 tools' input schemas, required/optional fields, defaults and annotations as
+28 tools' input schemas, required/optional fields, defaults and annotations as
 discovered over actual stdio. The contractVersion field versions this inventory's
 format, not the package or a published v1 API. The current package is pre-v1.
 The protocol test compares every tool to it and verifies this table's tool names.

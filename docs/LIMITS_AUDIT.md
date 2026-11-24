@@ -1,6 +1,6 @@
 # Request and resource-limit audit
 
-Scope: current pre-v1 implementation, including all 25 public tools, refresh jobs
+Scope: current pre-v1 implementation, including all 28 public tools, refresh jobs
 and local storage. This is an implementation audit and regression inventory, not
 the independent security review (#48) or a production stress test. Reconcile it
 when adding adapters/tools and on the final v1 candidate.
@@ -87,3 +87,7 @@ All tests are offline/synthetic; no load was sent to faculty services.
 CI runs syntax checks, offline tests and the retrieval benchmark. Report results
 for the reviewed revision in its PR. Final client/live compatibility and independent
 review remain separate release gates; passing these tests does not certify security.
+
+## Saved schedule reuse
+
+save_lab_schedule verifies one course/group, one timetable and one news forum using their existing bounded readers. get_saved_lab_schedule checks enrollment before/after, reads one news forum without course/poll discovery, and expands 1-31 dates. clear_saved_lab_schedule deletes one explicit scope. At most 32 snapshots/account, 32 entries/snapshot, 64 KiB/file and seven days reuse; no background refresh. See SAVED_LAB_SCHEDULES.md.

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add explicit private semester/group timetable save, reuse and clear tools, retaining original verification times and freshly checking selected announcements without reopening course pages or polls.
+
 - Add a read-only weekly/monthly lab calendar projection with stable event IDs, source evidence, cancelled/moved entries and explicit uncertainty.
 
 - Resolve selected weekly timetable/news evidence into scoped scheduled/cancelled/unknown answers while preserving exemptions, freshness and undated homework.
