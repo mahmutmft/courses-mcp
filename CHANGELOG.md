@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a student quickstart with current setup/client steps, source-linked MK/EN examples and uncertainty guidance; reconcile the README tool inventory with shipped tools.
+
 - Adopt GNU GPL version 3 only (GPL-3.0-only), with project attribution, contribution terms and matching npm metadata.
 
 - Add a dedicated unsupported-Moodle-layout issue form and fictional reporting guide, with privacy reminders and safe diagnostic fields.
