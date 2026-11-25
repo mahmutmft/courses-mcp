@@ -67,6 +67,12 @@ For an upgrade, stop the connection, update the checkout, run npm ci and npm run
 
 ## Verification record
 
+The [2026-11-25 verification](SETUP_VERIFICATION_2026_11_25.md) records current
+Windows setup/rerun results and exact tool discovery through real SDK and installed
+Codex app-server clients. Warm-cache recovery and state preservation passed;
+empty-browser-cache downloads did not finish within the observation limits.
+Cold installation, GUI import/chat and final-candidate sign-off remain outstanding.
+
 Guided setup implementation 81485d9f12f1de183259c53957de02ae4083c790 was
 tested on 2026-11-19 from a fresh temporary copy with no node_modules or .env:
 Windows build 26300, Node 24.18.0, npm 11.16.0. The final guided command completed
