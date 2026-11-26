@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add explicit reviewed-event lab ICS export with stable calendar IDs, safe source links, UTC/DST handling and explicit exclusions for unknown/conflicting events; no automatic file or external calendar writes.
+
 - Add a reproducible credential-free synthetic MCP demo with reserved example URLs, source citations and incomplete-coverage explanation; check the transcript for drift in CI.
 
 - Add a student quickstart with current setup/client steps, source-linked MK/EN examples and uncertainty guidance; reconcile the README tool inventory with shipped tools.

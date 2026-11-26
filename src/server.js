@@ -13,6 +13,7 @@ import { isMonday } from './labs.js';
 import { isWeeklyLabRange, validateWeeklyEvidence } from './weekly-labs.js';
 import { labTermSchema } from './lab-terms.js';
 import { savedScheduleScope } from './saved-lab-schedules.js';
+import { exportLabCalendar } from './lab-ics.js';
 
 import packageInfo from '../package.json' with { type: 'json' };
 
@@ -22,6 +23,16 @@ const server = new McpServer({ name: 'finki-courses', version: packageInfo.versi
 });
 const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true };
 const courseId = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
+register('export_lab_calendar', 'Only for an explicit user-requested export, reread the selected calendar evidence and serialize up to 100 event IDs previously reviewed in get_lab_calendar. Returns private ICS text and a suggested filename; the user chooses where to save it. No filesystem or external calendar writes. Unknown end times/timezones, conflicts and ambiguous DST times are skipped with reasons. includeUncertain permits dated tentative entries only, never conflicting or uncertain cancellations. Existing contract scope/coverage remains explicit.', {
+  courseIds: z.array(courseId).min(1).max(4),
+  range: z.object({ from: z.string(), through: z.string() }).strict().refine(isOccurrenceRange, 'Use 1 to 31 valid inclusive dates.'),
+  evidence: z.array(z.object({ courseId, resourceId: courseId, forumId: courseId }).strict()).max(4).optional(),
+  eventIds: z.array(z.string().regex(/^[a-f0-9]{24}$/)).min(1).max(100).refine(ids => new Set(ids).size === ids.length, 'Choose distinct reviewed event IDs.'),
+  includeUncertain: z.boolean().default(false),
+}, async ({ courseIds, range, evidence, eventIds, includeUncertain }) => {
+  validateWeeklyEvidence(courseIds, evidence);
+  return exportLabCalendar(await moodle.getLabCalendar(courseIds, range, evidence), { eventIds, includeUncertain });
+});
 register('save_lab_schedule', 'Only after explicit user confirmation, freshly verify and privately save one enrolled course/group timetable and news-forum locator for an explicit semester. Requires attending preference and a resolved group. Repeating explicitly refreshes it; max seven days reuse. Stores structured slots, not raw pages, credentials or poll labels. No Moodle writes.', {
   courseId, scope: savedScheduleScope, resourceId: courseId, forumId: courseId,
   weekStart: z.string().refine(isMonday, 'Use a valid Monday.'),

@@ -71,3 +71,5 @@ DST/year boundaries, stale evidence at return time, fail-stop reads, request-loc
 source sharing and final enrollment revocation. Actual stdio tests verify tool
 discovery, read-only annotation and invalid range/scope rejection before login.
 No live faculty compatibility or external calendar synchronization is claimed.
+
+After reviewing event IDs, an explicit [ICS export](LAB_ICS.md) can serialize eligible selected events without saving files or changing an external calendar.
