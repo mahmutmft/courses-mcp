@@ -101,6 +101,95 @@
       }
     },
     {
+      "name": "export_lab_calendar",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "courseIds": {
+            "minItems": 1,
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "range": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "through": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "from",
+              "through"
+            ],
+            "additionalProperties": false
+          },
+          "evidence": {
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "courseId": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "resourceId": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "forumId": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "courseId",
+                "resourceId",
+                "forumId"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "eventIds": {
+            "minItems": 1,
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{24}$"
+            }
+          },
+          "includeUncertain": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "courseIds",
+          "range",
+          "eventIds"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
       "name": "get_announcements",
       "inputSchema": {
         "type": "object",

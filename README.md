@@ -82,6 +82,7 @@ tool actually verifies, what remains unknown, and what your AI client receives.
 | get_assignment | courseId, assignmentId (numeric module ID) | Assignment description and published opening/due/cutoff fields; no submissions or grades |
 | get_lab_schedule | courseId, weekStart (Monday YYYY-MM-DD) | Published dated lab matches and group homework linked to your saved presentation term; explicit uncertainty |
 | get_weekly_labs | courseIds, weekStart, optional fromDate/evidence | Weekly candidates with selected timetable/news resolution, explicit answer states and uncertainty |
+| export_lab_calendar | courseIds, range, reviewed eventIds, optional evidence/includeUncertain | Private ICS text with explicit exclusions; no file or calendar writes |
 | get_lab_calendar | courseIds, inclusive range (1–31 dates), optional evidence | Read-only weekly/monthly projection with sources and moved/cancelled/uncertain entries |
 | get_lab_term_preference | courseId | Local user-declared group/term labels, selected choice ID and update time |
 | set_lab_term_preference | courseId, term (object or null) | Explicit full replacement/reset of private term preferences; never votes in Moodle |
@@ -272,3 +273,5 @@ Licensed under the **GNU General Public License, version 3 only**
 (`GPL-3.0-only`). See [LICENSE](LICENSE) for the complete terms and
 [LICENSE-NOTE.md](LICENSE-NOTE.md) for the project notice and scope.
 Project founder and maintainer: [mahmutmft](https://github.com/mahmutmft).
+
+For an explicit export of reviewed lab events, see [ICS export](docs/LAB_ICS.md). Missing dates/end times/timezones and conflicts are not silently filled in. The user chooses the save/import destination.

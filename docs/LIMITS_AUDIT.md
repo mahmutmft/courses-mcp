@@ -1,6 +1,6 @@
 # Request and resource-limit audit
 
-Scope: current pre-v1 implementation, including all 28 public tools, refresh jobs
+Scope: current pre-v1 implementation, including all 29 public tools, refresh jobs
 and local storage. This is an implementation audit and regression inventory, not
 the independent security review (#48) or a production stress test. Reconcile it
 when adding adapters/tools and on the final v1 candidate.
@@ -91,3 +91,7 @@ review remain separate release gates; passing these tests does not certify secur
 ## Saved schedule reuse
 
 save_lab_schedule verifies one course/group, one timetable and one news forum using their existing bounded readers. get_saved_lab_schedule checks enrollment before/after, reads one news forum without course/poll discovery, and expands 1-31 dates. clear_saved_lab_schedule deletes one explicit scope. At most 32 snapshots/account, 32 entries/snapshot, 64 KiB/file and seven days reuse; no background refresh. See SAVED_LAB_SCHEDULES.md.
+
+## ICS export
+
+export_lab_calendar reuses the existing bounded calendar read, then considers at most 100 explicit IDs. It permits at most 16 safe source URLs/event, 256 KiB ICS text and the normal 1 MiB MCP result cap. No file writes, background jobs or external calendar calls. See LAB_ICS.md.

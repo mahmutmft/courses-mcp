@@ -8,11 +8,12 @@ Clients can ignore that guidance, so inspect the actual tool result when in doub
 
 ## Evidence inventory
 
-This covers the current 28 tools. Field names describe the actual contracts; a
+This covers the current 29 tools. Field names describe the actual contracts; a
 missing field is not an invitation to invent a timestamp or Moodle citation.
 
 | Tools | Source and freshness | Interpretation and evidence tests |
 | --- | --- | --- |
+| `export_lab_calendar` | Existing event source/check times and export DTSTAMP; safe source links in ICS. | Explicit reviewed IDs only. Unknown times/conflicts skipped; optional tentative entries; no local file or external calendar write. ICS passes to the configured AI client. test/lab-ics.test.js |
 | `save_lab_schedule`, `get_saved_lab_schedule`, `clear_saved_lab_schedule` | Original verifiedAt, separate current changesCheckedAt and safe module citations; clear returns scope only. | Explicit local confirmation/refresh, not a current poll check. Changed selection/expiry suppresses sessions; incomplete evidence remains unknown. test/saved-lab-schedules.test.js |
 | `get_lab_calendar` | Event sources/check times, original/moved evidence and per-week freshness/uncertainty. | Projection only; missing timezones/end times remain unknown, cancelled entries stay visible. test/lab-calendar.test.js |
 | `list_courses` | Returned course URLs; classificationSource explains label inference. No universal checkedAt field. | Enrolled list/naming metadata, not official current-semester inference. Pagination/unknown labels stay visible. test/courses.test.js, test/moodle.test.js |
