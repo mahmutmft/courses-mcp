@@ -94,3 +94,5 @@ Returned material goes to your configured AI client/provider; a local MCP server
 does not make all assistant processing offline. See [evidence/privacy](TRUST_AND_PRIVACY.md).
 To help improve the project, read [CONTRIBUTING.md](../CONTRIBUTING.md); offline
 contributions need no faculty credentials.
+
+Try the [synthetic demo conversation](DEMO.md) for a source-linked result and a partial-coverage explanation without faculty access.

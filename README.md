@@ -10,6 +10,8 @@ The server reads supported Moodle HTML, text PDFs, folders and published coursew
 
 New student? Start with the [student quickstart](docs/STUDENT_QUICKSTART.md) for install/connect steps, a first source-linked result, MK/EN examples and the meaning of unknown/partial answers.
 
+See a [synthetic example conversation](docs/DEMO.md) with a generated MCP result, reserved example source URL and an explicit incomplete-coverage explanation. Run it without faculty credentials using `npm run demo` after installing dependencies.
+
 ## Setup
 
 Requires Node.js 24 or newer with npm. For a fresh installation:
