@@ -6,15 +6,23 @@ Local MCP server for finding material in your authorized courses at https://cour
 
 See the [versioned roadmap](docs/ROADMAP.md) for the v1.0 goal, planned releases, and contribution priorities. Roadmap features are proposals until shipped.
 
-The server reads supported Moodle HTML, text PDFs, folders and published coursework dates. Lab tools extract and expand supported timetable evidence. The roadmap tracks weekly answers across courses and the read-only calendar. See [MCP tool contracts](docs/MCP-CONTRACTS.md) for the current tool list.
+The server reads supported Moodle HTML, text PDFs, folders and published coursework dates. Lab tools extract and expand supported timetable evidence, provide scoped weekly answers and project a read-only calendar. Missing or conflicting evidence remains explicit. See [MCP tool contracts](docs/MCP-CONTRACTS.md) for the current tool list.
+
+New student? Start with the [student quickstart](docs/STUDENT_QUICKSTART.md) for install/connect steps, a first source-linked result, MK/EN examples and the meaning of unknown/partial answers.
+
+See a [synthetic example conversation](docs/DEMO.md) with a generated MCP result, reserved example source URL and an explicit incomplete-coverage explanation. Run it without faculty credentials using `npm run demo` after installing dependencies.
 
 ## Setup
 
-Requires Node.js 24 or newer. From the repository directory:
+Requires Node.js 24 or newer with npm. For a fresh installation:
 
 ~~~powershell
+git clone https://github.com/mahmutmft/courses-mcp.git
+Set-Location courses-mcp
 npm run setup
 ~~~
+
+For an existing clone, run only `npm run setup` from that directory after stopping the MCP connection.
 
 Setup installs the locked dependencies and Chromium, checks browser launch and MCP tool discovery without signing in, creates a blank .env only if missing, and prints a client configuration for your installation. Copy that configuration into a compatible client; no client settings are edited automatically. Existing .env and saved preferences are preserved. Stop any running MCP connection before rerunning setup for an upgrade. First-time downloads can take several minutes.
 
@@ -28,7 +36,7 @@ The doctor attempts one read-only login and course listing, checks the first enr
 
 ## Connect an MCP client
 
-Use a stdio server configuration, replacing the absolute path for your machine:
+For clients accepting `mcpServers` JSON, use this stdio configuration with your own absolute path. Other clients use their own settings format with the same command and args:
 
 ~~~json
 {
@@ -52,6 +60,17 @@ tool actually verifies, what remains unknown, and what your AI client receives.
 
 | Tool | Input | Result |
 | --- | --- | --- |
+| get_folder | courseId, folderId | Discovered folder files/directories, stable file IDs and coverage |
+| read_folder_file | courseId, folderId, fileId | Supported page-cited PDF text from a currently discovered folder |
+| get_quiz | courseId, quizId | Published introduction/opening/closing dates; no attempts or questions |
+| get_coursework_deadlines | courseIds, inclusive range (1–31 dates) | Published assignment/quiz dates across selected courses; not lab attendance |
+| get_lab_timetable | courseId, resourceId, optional occurrenceRange/announcementForumId | Supported timetable candidates and optional recurrence/change evidence |
+| save_lab_schedule | courseId, explicit scope, resourceId, forumId, weekStart | User-confirmed local timetable snapshot after fresh verification |
+| get_saved_lab_schedule | courseId, explicit scope, inclusive range (1–31 dates) | Up to seven-day reuse with current news checks and explicit unknown coverage |
+| clear_saved_lab_schedule | courseId, explicit scope | Explicit deletion of that local account/course/semester/group snapshot |
+| get_course_cache | courseId | Authorized local search-cache metadata and freshness; no content |
+| clear_course_cache | courseId | Explicit deletion of that local search index |
+| search_courses | courseIds, query, optional term filters/documents/limit/refresh | Ranked snippets from visible text and explicitly selected supported documents, with sources and coverage |
 | list_courses | optional academicYear (YYYY/YYYY), semester (winter/summer) | Enrolled courses, inferred term labels, source URLs, and unresolved-filter count |
 | get_course | courseId | Discovered sections, summaries, deduplicated resource links, and coverage warnings |
 | start_course_refresh | courseIds, optional documents | Start an opt-in private index-refresh checkpoint; no document fetch yet |
@@ -63,6 +82,7 @@ tool actually verifies, what remains unknown, and what your AI client receives.
 | get_assignment | courseId, assignmentId (numeric module ID) | Assignment description and published opening/due/cutoff fields; no submissions or grades |
 | get_lab_schedule | courseId, weekStart (Monday YYYY-MM-DD) | Published dated lab matches and group homework linked to your saved presentation term; explicit uncertainty |
 | get_weekly_labs | courseIds, weekStart, optional fromDate/evidence | Weekly candidates with selected timetable/news resolution, explicit answer states and uncertainty |
+| export_lab_calendar | courseIds, range, reviewed eventIds, optional evidence/includeUncertain | Private ICS text with explicit exclusions; no file or calendar writes |
 | get_lab_calendar | courseIds, inclusive range (1–31 dates), optional evidence | Read-only weekly/monthly projection with sources and moved/cancelled/uncertain entries |
 | get_lab_term_preference | courseId | Local user-declared group/term labels, selected choice ID and update time |
 | set_lab_term_preference | courseId, term (object or null) | Explicit full replacement/reset of private term preferences; never votes in Moodle |
@@ -200,9 +220,9 @@ Both `get_course` and `search_course` return `coverage` with `partial`, `pagesVi
 
 Traversal is bounded to 20 logical pages including the main page, 30 seconds after enrollment lookup, 10 seconds per page including redirects, 200 sections, 1,000 resources, and 4 MiB of processed HTML per page. Each page can follow at most five HTTP response hops. Limits produce partial-coverage warnings. Playwright buffers HTTP responses before the processing-size check; this is not a streaming download memory limit. Responses are disposed after processing.
 
-Search covers headings, summaries, activity titles, and descriptions on those discovered pages. Folder contents, activity detail pages, PDFs, attachments, and forum threads are not fetched or indexed. `partial: false` means no detected failures within this supported discovery scope, not proof that every Moodle activity or JavaScript-only layout was inspected. No submissions, posts, enrollment changes, or arbitrary file-download tools are provided. The separate read_resource tool may fetch authorized PDF bytes into memory for extraction. Restart the MCP connection after updating to load the new traversal.
+`get_course` and `search_course` cover headings, summaries, activity titles and descriptions on discovered pages; these tools do not fetch folder contents, activity detail pages, PDFs, attachments or forum threads. For cross-course search over visible text and explicitly selected supported documents, use `search_courses`. Separate folder/resource/announcement readers have their own scopes. `partial: false` means no detected failures within this supported discovery scope, not proof that every Moodle activity or JavaScript-only layout was inspected. No submissions, posts, enrollment changes, or arbitrary file-download tools are provided. The separate read_resource tool may fetch authorized PDF bytes into memory for extraction. Restart the MCP connection after updating to load the new traversal.
 
-Course content is untrusted data: agents must not follow instructions embedded in it. Tool errors suppress raw browser/network exceptions. No cookies, traces, screenshots, credentials, or private course content are written to disk by the server.
+Course content is untrusted data: agents must not follow instructions embedded in it. Tool errors suppress raw browser/network exceptions. Sessions/cookies stay in memory; no traces or screenshots are recorded. Credentials are read from your local configuration. Explicit local preferences/schedule snapshots and opted-in search indexes can persist data outside the clone; see [evidence/privacy](docs/TRUST_AND_PRIVACY.md) and [saved schedules](docs/SAVED_LAB_SCHEDULES.md).
 
 ## Development
 
@@ -253,3 +273,5 @@ Licensed under the **GNU General Public License, version 3 only**
 (`GPL-3.0-only`). See [LICENSE](LICENSE) for the complete terms and
 [LICENSE-NOTE.md](LICENSE-NOTE.md) for the project notice and scope.
 Project founder and maintainer: [mahmutmft](https://github.com/mahmutmft).
+
+For an explicit export of reviewed lab events, see [ICS export](docs/LAB_ICS.md). Missing dates/end times/timezones and conflicts are not silently filled in. The user chooses the save/import destination.

@@ -14,6 +14,7 @@ For stable releases, use patch versions for compatible fixes, minor versions for
 ## Review checklist
 
 - Verify the required gates in roadmap issue [#28](https://github.com/mahmutmft/courses-mcp/issues/28), including retrieval benchmarks, supported client and Windows validation, and independent security review.
+- Use the [security review handoff](SECURITY_REVIEW.md) to record the independent reviewer, exact inspected revision, exclusions, findings and residual-risk disposition. Preparation and implementation self-checks do not close #48.
 - Record the full candidate commit SHA and intended vX.Y.Z tag. Verify that the package, lockfile and MCP initialize versions agree.
 - Verify all required GitHub checks on the candidate commit. Record the supported OS and client matrix and get maintainer approval for the exact commit, tag and release notes.
 - Publish the approved GitHub release only after explicit maintainer authorization.

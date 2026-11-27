@@ -10,6 +10,8 @@ Node.js >=24, JavaScript ES modules, npm lockfile. The official MCP SDK v1 handl
 
 ## Architecture and important directories
 
+- src/lab-ics.js: explicit-selection ICS serialization of current lab calendar events, UTC/DST guards, skipped unknowns and no filesystem/external-calendar writes. Test-only ical.js independently parses exports; see docs/LAB_ICS.md.
+
 - src/saved-lab-schedules.js: explicit private account/semester/course/group timetable snapshots; seven-day reuse with fresh news checks, original provenance and scoped invalidation. See docs/SAVED_LAB_SCHEDULES.md.
 
 - src/refresh-jobs.js: bounded private metadata checkpoints for explicit course-index refresh, with current authorization and between-call cancellation/resumption; see docs/REFRESH_JOBS.md.
