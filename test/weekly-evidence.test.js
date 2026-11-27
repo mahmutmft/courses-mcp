@@ -131,3 +131,26 @@ test('earlier courses that become stale during later reads are unknown at return
   assert.ok(result.courses[0].warnings.includes('WEEKLY_EVIDENCE_STALE'));
   assert.equal(result.courses[0].evidence.checksComplete, false);
 });
+
+
+test('unsupported roster evidence propagates safe reasons through weekly and calendar results', async () => {
+ const unsupported = {...timetable, status:'unsupported', entries:[],
+  coverage:{partial:true,warnings:['TIMETABLE_ROSTER_UNSUPPORTED','PRIVATE_SOURCE_DIAGNOSTIC']}};
+ const m = new Moodle({});
+ m.listCourses = async () => ({courses:[{id:1}]});
+ m.getLabSchedule = async () => schedule;
+ m.getLabTimetable = async () => unsupported;
+ m.getAnnouncements = async () => announcements;
+ const evidence = [{courseId:1, resourceId:2, forumId:3}];
+ const weekly = await m.getWeeklyLabs([1], range.from, undefined, evidence);
+ assert.equal(weekly.courses.length,1);
+ assert.equal(weekly.answerState,'unknown');
+ assert.ok(weekly.courses[0].warnings.includes('WEEKLY_TIMETABLE_UNSUPPORTED'));
+ assert.ok(weekly.courses[0].warnings.includes('WEEKLY_TIMETABLE_ROSTER_UNSUPPORTED'));
+ const calendar = await m.getLabCalendar([1],range,evidence);
+ assert.equal(calendar.status,'partial');
+ assert.deepEqual(calendar.events,[]);
+ assert.equal(calendar.weeks[0].answerState,'unknown');
+ assert.ok(calendar.weeks[0].courses[0].warnings.includes('WEEKLY_TIMETABLE_ROSTER_UNSUPPORTED'));
+ assert.doesNotMatch(JSON.stringify({weekly,calendar}), /PRIVATE_SOURCE_DIAGNOSTIC/);
+});
