@@ -4,7 +4,7 @@ import { mkdtemp, writeFile, readFile, mkdir, rm, access } from 'node:fs/promise
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runSetup, runStep } from '../scripts/setup.js';
+import { runSetup, runStep, SetupError, verifyToolInventory } from '../scripts/setup.js';
 
 async function fixture(t) {
   const parent = await mkdtemp(join(tmpdir(), 'courses-setup-'));
@@ -91,4 +91,53 @@ test('missing template gives a safe configuration failure and leaves env absent'
   await rm(join(root, '.env.example'));
   await assert.rejects(runSetup(options), /Could not create .env/);
   await assert.rejects(access(join(root, '.env')));
+});
+
+
+test('real subprocess timeout is distinct from exit failure and spawn failure', async () => {
+  await assert.rejects(runStep(process.execPath, ['-e', 'console.error("PRIVATE_TIMEOUT"); setInterval(() => {}, 1000)'], tmpdir(), { timeoutMs: 150 }),
+    error => error.code === 'SETUP_STEP_TIMEOUT' && !error.message.includes('PRIVATE_TIMEOUT'));
+  await assert.rejects(runStep(process.execPath, ['-e', 'process.exit(2)'], tmpdir()), { code: 'SETUP_STEP_FAILED' });
+  await assert.rejects(runStep(join(tmpdir(), 'missing-setup-command'), [], tmpdir()), { code: 'SETUP_STEP_START_FAILED' });
+  for (const timeoutMs of [0, -1, 300001, NaN, 1.5]) {
+    await assert.rejects(runStep(process.execPath, [], tmpdir(), { timeoutMs }), { code: 'SETUP_INVALID_TIMEOUT' });
+  }
+});
+
+test('installation timeout identifies its stage without leaking child diagnostics or writing env', async t => {
+  for (const stage of [0, 1]) {
+    const { root, options, logs } = await fixture(t);
+    let count = 0;
+    await assert.rejects(runSetup({ ...options, run: async () => {
+      if (count++ === stage) throw new SetupError('PRIVATE_TIMEOUT_TOKEN', 'SETUP_STEP_TIMEOUT');
+    } }), error => error.code === (stage === 0 ? 'SETUP_DEPENDENCY_TIMEOUT' : 'SETUP_BROWSER_TIMEOUT') &&
+      /timed out after five minutes/.test(error.message) && !error.message.includes('PRIVATE_TIMEOUT_TOKEN'));
+    assert.equal(count, stage + 1);
+    assert.doesNotMatch(logs.join('\n'), /PRIVATE_TIMEOUT_TOKEN/);
+    await assert.rejects(access(join(root, '.env')));
+  }
+});
+
+test('inventory verifies every schema, annotation and server identity with safe metadata failures', async t => {
+  const { root } = await fixture(t);
+  const baseline = JSON.parse(await readFile(new URL('./fixtures/tool-contracts.json', import.meta.url), 'utf8'));
+  const metadata = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  await mkdir(join(root, 'test/fixtures'), { recursive: true });
+  await writeFile(join(root, 'test/fixtures/tool-contracts.json'), JSON.stringify(baseline));
+  await writeFile(join(root, 'package.json'), JSON.stringify(metadata));
+  const identity = { name: 'finki-courses', version: metadata.version };
+  assert.deepEqual(await verifyToolInventory(root, identity, [...baseline.tools].reverse()), { toolCount: baseline.tools.length });
+  const changedSchema = structuredClone(baseline.tools);
+  changedSchema[0].inputSchema = { type: 'object' };
+  const changedAnnotation = structuredClone(baseline.tools);
+  changedAnnotation[0].annotations = {};
+  for (const [server, tools] of [
+    [identity, baseline.tools.slice(1)], [identity, [...baseline.tools, baseline.tools[0]]],
+    [identity, changedSchema], [identity, changedAnnotation],
+    [{ ...identity, version: 'wrong' }, baseline.tools], [{ ...identity, name: 'wrong' }, baseline.tools],
+    [undefined, baseline.tools], [identity, undefined],
+  ]) await assert.rejects(verifyToolInventory(root, server, tools), { code: 'SETUP_INVENTORY_FAILED' });
+  await writeFile(join(root, 'package.json'), 'PRIVATE_INVALID_JSON');
+  await assert.rejects(verifyToolInventory(root, identity, baseline.tools), error =>
+    error.code === 'SETUP_INVENTORY_FAILED' && !error.message.includes('PRIVATE_INVALID_JSON') && !error.message.includes(root));
 });

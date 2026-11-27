@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Guided setup distinguishes installation timeouts and verifies the full MCP tool inventory and server version.
+
 - Add explicit reviewed-event lab ICS export with stable calendar IDs, safe source links, UTC/DST handling and explicit exclusions for unknown/conflicting events; no automatic file or external calendar writes.
 
 - Add a reproducible credential-free synthetic MCP demo with reserved example URLs, source citations and incomplete-coverage explanation; check the transcript for drift in CI.

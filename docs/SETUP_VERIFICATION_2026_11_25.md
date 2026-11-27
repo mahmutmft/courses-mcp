@@ -47,3 +47,23 @@ Publish only these aggregate outcomes. Captured configuration contains personal
 paths, and private diagnostic files may contain environment details; they are not
 repository artifacts. No raw output, screenshots, credentials or student content
 belong in this verification record.
+
+
+## Follow-up: 2026-11-27
+
+The setup verifier was strengthened to compare all 29 current tool schemas and
+annotations and the server identity/version, rather than checking only for
+`list_courses`. A real local Chromium launch and SDK stdio discovery passed
+without faculty login. Eleven setup tests passed, including a real subprocess
+timeout, nonzero exit, nonexistent executable, safe stage-specific recovery,
+and rejected inventory/version/schema/annotation changes. Timeout timers are
+cleared on process errors as well as exit.
+
+This follow-up uses installed browser binaries. It does not resolve the cold
+Chromium download result above or establish desktop GUI/client onboarding or
+final release-candidate sign-off. Issue #124 remains open.
+
+Follow-up validation: `npm run check`; `npm test` (280 passed, one Windows
+symlink privilege skip); `npm audit` (zero vulnerabilities); `npm run
+demo:check`; `npm run benchmark:retrieval` (31 synthetic cases passed);
+`git diff --check`. No live faculty workflow was exercised.

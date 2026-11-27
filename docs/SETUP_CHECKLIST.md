@@ -88,3 +88,17 @@ import/tool use, live faculty login, cold-cache setup and the final v1 candidate
 matrix still require verification. These checks do not establish other OS support.
 
 Clean checkout of 1e79af5aa2cb7c247ed94397ebe14d944af811c4 on Windows build 26300, PowerShell 7.6.9, Node 24.18.0 and npm 11.16.0. npm ci, browser installation command, syntax check and 158 offline test entries passed. Playwright launched Chromium 156.0.8078.4. The blank-template doctor exited with the expected setup message. The machine may have reused the existing Playwright browser cache. GUI MCP clients and live faculty login were outside this run. Revalidate the final v1 candidate and record its supported client matrix before release.
+
+
+### Setup diagnostics and complete discovery
+
+The guided installer allows five minutes each for dependency installation and
+Chromium installation. A timeout identifies the affected stage separately from
+an unsuccessful command or an inability to start it. Child diagnostic output
+is suppressed; rerunning setup preserves an existing `.env`.
+
+Local verification launches Chromium and a real stdio MCP server with blank
+credentials. It compares the server name/version and every tool input schema
+and annotation with the checked-in contract inventory (currently 29 tools).
+A missing or altered tool fails verification. This does not verify a desktop
+client configuration or a live faculty login.
