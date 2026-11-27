@@ -1,20 +1,52 @@
 import { spawn } from 'node:child_process';
-import { copyFile, constants } from 'node:fs/promises';
+import { copyFile, constants, readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isDeepStrictEqual } from 'node:util';
 import { performance } from 'node:perf_hooks';
 
 const projectRoot = fileURLToPath(new URL('../', import.meta.url));
-export class SetupError extends Error {}
+export class SetupError extends Error {
+  constructor(message, code = 'SETUP_FAILED') { super(message); this.name = 'SetupError'; this.code = code; }
+}
 
 // No shell interpolation and no child diagnostics: these may contain local secrets.
-export function runStep(command, args, cwd) {
+export function runStep(command, args, cwd, { timeoutMs = 300000 } = {}) {
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 300000) {
+    return Promise.reject(new SetupError('Invalid setup timeout.', 'SETUP_INVALID_TIMEOUT'));
+  }
   return new Promise((accept, reject) => {
-    const child = spawn(command, args, { cwd, stdio: 'ignore', windowsHide: true, timeout: 300000 });
-    child.once('error', () => reject(new SetupError('Setup command could not start.')));
-    child.once('exit', (code, signal) => code === 0 && !signal ? accept() : reject(new SetupError('Setup command failed or was interrupted.')));
+    const child = spawn(command, args, { cwd, stdio: 'ignore', windowsHide: true });
+    let timedOut = false;
+    const timer = setTimeout(() => { timedOut = true; child.kill(); }, timeoutMs);
+    child.once('error', () => {
+      clearTimeout(timer);
+      reject(new SetupError('Setup command could not start.', 'SETUP_STEP_START_FAILED'));
+    });
+    child.once('exit', (code, signal) => {
+      clearTimeout(timer);
+      if (timedOut) reject(new SetupError('Setup command timed out.', 'SETUP_STEP_TIMEOUT'));
+      else if (code === 0 && !signal) accept();
+      else reject(new SetupError('Setup command failed or was interrupted.', 'SETUP_STEP_FAILED'));
+    });
   });
+}
+
+export async function verifyToolInventory(root, identity, tools) {
+  try {
+    const { toolContracts } = await import('./tool-contracts.js');
+    const expected = JSON.parse(await readFile(resolve(root, 'test/fixtures/tool-contracts.json'), 'utf8'));
+    const metadata = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
+    if (identity?.name !== 'finki-courses' || identity?.version !== metadata.version ||
+        !Array.isArray(expected.tools) || expected.tools.length === 0 ||
+        !isDeepStrictEqual(toolContracts(tools), expected)) {
+      throw new Error('Inventory mismatch');
+    }
+    return { toolCount: tools.length };
+  } catch {
+    throw new SetupError('Installed server identity or tool contracts could not be verified.', 'SETUP_INVENTORY_FAILED');
+  }
 }
 
 export async function verifyLocalServer(root, nodePath) {
@@ -29,14 +61,15 @@ export async function verifyLocalServer(root, nodePath) {
   const client = new Client({ name: 'courses-setup', version: '1.0.0' });
   let timer;
   try {
-    await Promise.race([
+    return await Promise.race([
       (async () => {
-        await client.connect(transport);
+        const connected = client.connect(transport);
         transport.stderr?.resume();
+        await connected;
         const { tools } = await client.listTools();
-        if (!tools.some(tool => tool.name === 'list_courses')) throw new SetupError('Tool discovery failed.');
+        return verifyToolInventory(root, client.getServerVersion(), tools);
       })(),
-      new Promise((_, reject) => { timer = setTimeout(() => reject(new SetupError('Tool discovery timed out.')), 20000); }),
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new SetupError('Tool discovery timed out.', 'SETUP_DISCOVERY_TIMEOUT')), 20000); }),
     ]);
   } finally {
     clearTimeout(timer);
@@ -56,12 +89,15 @@ export async function runSetup({ root = projectRoot, nodePath = process.execPath
   }
   log('1/4 Installing locked dependencies (may take a few minutes)...');
   try { await run(nodePath, [npmPath, 'ci', '--prefer-offline', '--no-audit', '--no-fund'], root); }
-  catch { throw new SetupError('Dependency installation failed or timed out. Check connectivity, registry/proxy settings and running MCP processes; then rerun npm run setup. Existing local credentials are preserved.'); }
+  catch (error) { throw new SetupError((error?.code === 'SETUP_STEP_TIMEOUT' ? 'Dependency installation timed out after five minutes.' : 'Dependency installation failed.') + ' Check connectivity, registry/proxy settings and running MCP processes; then rerun npm run setup. Existing local credentials are preserved.', error?.code === 'SETUP_STEP_TIMEOUT' ? 'SETUP_DEPENDENCY_TIMEOUT' : 'SETUP_DEPENDENCY_FAILED'); }
   log('2/4 Installing Chromium (first download may take a few minutes)...');
   try { await run(nodePath, [resolve(root, 'node_modules/playwright/cli.js'), 'install', 'chromium'], root); }
-  catch { throw new SetupError('Browser installation failed or timed out. Check connectivity and disk space, then rerun npm run setup. Manual recovery: npm run browser:install.'); }
+  catch (error) { throw new SetupError((error?.code === 'SETUP_STEP_TIMEOUT' ? 'Browser installation timed out after five minutes.' : 'Browser installation failed.') + ' Check connectivity and disk space, then rerun npm run setup. Manual recovery: npm run browser:install.', error?.code === 'SETUP_STEP_TIMEOUT' ? 'SETUP_BROWSER_TIMEOUT' : 'SETUP_BROWSER_FAILED'); }
   log('3/4 Checking browser launch and MCP tool discovery (no faculty login)...');
-  try { await verify(root, nodePath); }
+  try {
+    const result = await verify(root, nodePath);
+    if (Number.isInteger(result?.toolCount)) log(`Verified ${result.toolCount} tool schemas and annotations against the installed version.`);
+  }
   catch { throw new SetupError('Local browser/MCP check failed. Check Node 24+, browser installation and OS requirements in docs/SETUP_CHECKLIST.md. Rerun npm run setup after fixing the problem.'); }
   log('4/4 Preparing local configuration...');
   let envCreated = false;
