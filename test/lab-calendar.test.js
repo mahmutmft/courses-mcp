@@ -107,3 +107,55 @@ test('calendar adapter shares only request-local source reads and rechecks final
   await assert.rejects(Moodle.prototype.getLabCalendar.call(fake, [1], range), /not in your enrolled/);
   await assert.rejects(collect(async () => week(), { from: '2026-11-01', through: '2026-12-02' }), /1 to 31/);
 });
+
+
+test('calendar source failure fails closed without retry and a new explicit call recovers', async () => {
+  const { collectWeeklyLabs } = await import('../src/weekly-labs.js');
+  let fail = true, tableReads = 0, forumReads = 0;
+  const fake = {
+    listCourses: async () => ({ courses: [{ id: 1 }] }),
+    getLabTimetable: async () => { tableReads++; return { status: 'unsupported', entries: [], checkedAt,
+      coverage: { warnings: ['TIMETABLE_ROSTER_UNSUPPORTED'] } }; },
+    getAnnouncements: async () => { forumReads++; if (fail) throw new Error('PRIVATE_NETWORK_SENTINEL');
+      return { status: 'read', posts: [], checkedAt }; },
+    getWeeklyLabs: async (courseIds, weekStart, fromDate, evidence, readEvidence) => collectWeeklyLabs({
+      courseIds, weekStart, fromDate, evidence, readEvidence, now,
+      readSchedule: async () => ({ status: 'unknown', attendance: 'unknown', checkedAt,
+        selectionSource: { term: { group: 'A' } }, datedOccurrences: [], termLinkedHomework: [], warnings: [] }),
+    }),
+  };
+  const range = { from: '2026-11-23', through: '2026-12-01' };
+  const evidence = [{ courseId: 1, resourceId: 7, forumId: 8 }];
+  await assert.rejects(Moodle.prototype.getLabCalendar.call(fake, [1], range, evidence), error => {
+    assert.match(error.message, /CALENDAR_REFRESH_UNAVAILABLE/);
+    assert.doesNotMatch(error.message, /PRIVATE_NETWORK_SENTINEL/);
+    return true;
+  });
+  assert.equal(tableReads, 1);
+  assert.equal(forumReads, 1);
+  fail = false;
+  const recovered = await Moodle.prototype.getLabCalendar.call(fake, [1], range, evidence);
+  assert.equal(tableReads, 2);
+  assert.equal(forumReads, 2);
+  assert.equal(recovered.status, 'partial');
+  assert.deepEqual(recovered.events, []);
+  assert.ok(recovered.weeks.every(week => week.answerState === 'unknown'));
+  assert.ok(recovered.weeks.every(week => week.courses[0].warnings.includes('WEEKLY_TIMETABLE_ROSTER_UNSUPPORTED')));
+});
+
+test('calendar schedule and week failures never return a successful empty calendar', async () => {
+  for (const failure of ['schedule', 'week']) {
+    let reads = 0, authorizations = 0;
+    const fake = { listCourses: async () => { authorizations++; return { courses: [{ id: 1 }] }; },
+      getWeeklyLabs: async () => { reads++;
+        if (failure === 'week') throw new Error('PRIVATE_WEEK_SENTINEL');
+        return { answerState: 'unknown', occurrences: [], courses: [{courseId: 1,
+          answerState: 'unknown', warnings: ['LAB_SCHEDULE_UNAVAILABLE']}] };
+      } };
+    await assert.rejects(Moodle.prototype.getLabCalendar.call(fake, [1],
+      {from: '2026-11-01', through: '2026-11-30'}), error =>
+      /CALENDAR_REFRESH_UNAVAILABLE/.test(error.message) && !error.message.includes('PRIVATE_WEEK_SENTINEL'));
+    assert.equal(reads, 1);
+    assert.equal(authorizations, 1);
+  }
+});
