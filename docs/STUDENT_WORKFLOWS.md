@@ -93,3 +93,32 @@ calendar interruption's cause is not established. Connection/access failures
 still fail closed; there is no automatic login retry. Unsupported timetable
 content alone is tested to return a partial calendar, rather than a refresh
 failure. Independent quiz-view comparison and final-candidate checks remain open.
+
+
+## Calendar interruption investigation (2026-11-28)
+
+The previously connected MCP reported an expired session before reading evidence.
+A separate bounded read-only check then ran the production Moodle calendar adapter
+from exact checkout `02f2ad216659d842da9a878ab587aaf8118265a3`, package 0.1.0,
+Windows build 26300 and Node 24.18.0. It used local configuration without publishing
+credentials, content, student identifiers, course/source identifiers or paths.
+Only stage outcomes, durations and fixed warnings were observed in memory.
+
+Fresh authentication succeeded. Enrollment, lab schedule, selected timetable and
+announcements reads completed, followed by a successful final enrollment check.
+The calendar returned `partial`, zero events and unknown weekly coverage. The
+selected timetable was an unsupported roster; its fixed warning remained visible.
+The weekly read took approximately 16 seconds, including approximately six seconds
+for timetable access and four for announcements. Initial enrollment/authentication
+took approximately 18 seconds. These are single observations, not a benchmark.
+
+The earlier `CALENDAR_REFRESH_UNAVAILABLE` was not reproduced. Neither its precise
+cause nor a network-only explanation is established. No timeout/authentication
+rules were weakened and no automatic retry was introduced. This run used the
+production adapter directly, not a desktop GUI or stdio client, and is not final
+v1-candidate acceptance. #125 remains open.
+
+Synthetic regression tests now exercise failed announcement reads, unavailable
+schedules and failed week reads: each fails closed, suppresses raw errors and
+stops subsequent week reads. A subsequent explicit request rereads the evidence
+and can recover to partial/unknown; a failed request cannot poison future calls.
