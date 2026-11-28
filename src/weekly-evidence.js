@@ -49,6 +49,9 @@ export function resolveWeeklyEvidence(schedule, timetable, announcements, range,
     occurrences, sessions, checkedAt: announcements?.checkedAt ?? null,
     sourceUrl: timetable.sourceUrl, timetableCheckedAt: timetable.checkedAt,
     forumUrl: announcements?.sourceUrl ?? null, checksComplete: complete,
-    warnings: complete ? [] : ['WEEKLY_EVIDENCE_INCOMPLETE'],
+    warnings: complete ? [] : ['WEEKLY_EVIDENCE_INCOMPLETE',
+      ...(timetable.status === 'unsupported' ? ['WEEKLY_TIMETABLE_UNSUPPORTED'] : []),
+      ...((timetable.coverage?.warnings ?? []).includes('TIMETABLE_ROSTER_UNSUPPORTED') ? ['WEEKLY_TIMETABLE_ROSTER_UNSUPPORTED'] : []),
+    ],
     scope: 'Resolved group in the explicitly selected timetable/news forum only. Confirmed-none requires explicit cancellation of all known in-range slots and no additional candidates/undated work. Other sources and moves from outside the original week remain outside scope.' };
 }

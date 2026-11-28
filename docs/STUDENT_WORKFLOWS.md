@@ -69,3 +69,27 @@ and non-sensitive limitations only. Never copy faculty content, names, course
 rosters, raw poll labels, credentials, cookie values or personal filesystem paths
 into the record. If the live check is unavailable, #125 remains open. A successful
 offline suite is not a substitute for that check or independent security review.
+
+
+## Live compatibility follow-up (2026-11-27)
+
+An authorized bounded MCP check successfully read semester-filtered enrollment,
+two saved choices, quiz metadata and a remaining-week overview. Unknown poll end
+times, attendance settings, quiz timezone and undated homework stayed explicit.
+No Moodle or local preference writes were performed. The installed connector
+revision was not established, so this is not final-candidate acceptance.
+
+A selected PDF was a student roster with term labels rather than a supported
+standalone timetable. Roster pages are deliberately excluded from timetable
+extraction and now report `TIMETABLE_ROSTER_UNSUPPORTED`. Weekly and calendar
+results expose fixed `WEEKLY_TIMETABLE_UNSUPPORTED` and
+`WEEKLY_TIMETABLE_ROSTER_UNSUPPORTED` reasons. They remain unknown/partial; poll
+labels and roster rows cannot establish recurrence or a dated obligation.
+Synthetic tests cover these paths without copying any private document data.
+
+One calendar request returned `CALENDAR_REFRESH_UNAVAILABLE`; a subsequent weekly
+request with the selected evidence succeeded with incomplete coverage. The
+calendar interruption's cause is not established. Connection/access failures
+still fail closed; there is no automatic login retry. Unsupported timetable
+content alone is tested to return a partial calendar, rather than a refresh
+failure. Independent quiz-view comparison and final-candidate checks remain open.

@@ -131,7 +131,13 @@ export function extractTimetable(resource) {
     const remaining=60000-chars;if (remaining<=0) {warnings.push('TIMETABLE_TEXT_LIMIT');break;}
     const text=String(block.text).slice(0,remaining);chars+=text.length;
     if (text.length<String(block.text).length) warnings.push('TIMETABLE_TEXT_LIMIT');
-    const lines=text.split('\n');if(lines.length>1000)warnings.push('TIMETABLE_LINE_LIMIT');
+    const lines=text.split('\n');
+    // A roster is not a source of personal attendance or recurrence. Inspect headers only.
+    if (lines.slice(0, 5).some(line => /(?:име.*презиме.*индекс|first\s*name.*last\s*name.*(?:index|student\s*id)|name.*student\s*id)/iu.test(line))) {
+      warnings.push('TIMETABLE_ROSTER_UNSUPPORTED');
+      continue;
+    }
+    if(lines.length>1000)warnings.push('TIMETABLE_LINE_LIMIT');
     for (const [lineIndex,line] of lines.slice(0,1000).entries()) {
       if (!line.includes('|')) continue;
       const fields={};let valid=true;

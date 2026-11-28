@@ -99,3 +99,13 @@ test('authorized PDF adapter and real worker preserve structured line/page prove
  const m=new Moodle({});m.getCourse=async()=>({id:42,sections:[{resources:[{name:'Synthetic timetable',url:source}]}]});m.page={context:()=>({request})};
  const result=await m.getLabTimetable(42,12);assert.equal(result.entries.length,1);assert.equal(result.entries[0].sources[0].page,1);assert.equal(result.entries[0].sources[0].url,source);assert.equal(result.status,'read');assert.equal(disposed,2);
 });
+
+
+test('roster PDF pages are explicitly unsupported even with instruction-shaped timetable lines', () => {
+ const result = extractTimetable({...metadata, format:'pdf', pages:[{pageNumber:1,
+  text:'Име Презиме Индекс Термин и група\nSYNTHETIC_PERSON 000000 Monday 09:00 A Lab 9\n'+line}]});
+ assert.equal(result.status,'unsupported');
+ assert.deepEqual(result.entries,[]);
+ assert.ok(result.coverage.warnings.includes('TIMETABLE_ROSTER_UNSUPPORTED'));
+ assert.doesNotMatch(JSON.stringify(result), /SYNTHETIC_PERSON|000000/);
+});
